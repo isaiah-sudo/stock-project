@@ -1,5 +1,8 @@
 import type { Portfolio, Transaction } from "@stock/shared";
+import { PrismaClient } from "@prisma/client";
 import { computePortfolioDayMetrics } from "./portfolioMetrics.js";
+
+const prisma = new PrismaClient();
 
 type SupportedSymbol = "AAPL" | "MSFT" | "NVDA" | "AMZN" | "GOOGL" | "TSLA" | "META";
 
@@ -8,13 +11,6 @@ interface Position {
   name: string;
   quantity: number;
   averageCost: number;
-}
-
-interface PaperAccount {
-  linked: boolean;
-  cashBalance: number;
-  positions: Map<SupportedSymbol, Position>;
-  transactions: Transaction[];
 }
 
 interface LiveQuote {
@@ -44,7 +40,6 @@ const SYMBOL_META: Record<SupportedSymbol, { name: string; basePrice: number }> 
 const SUPPORTED_SYMBOLS = Object.keys(SYMBOL_META) as SupportedSymbol[];
 
 class PaperTradingService {
-  private accounts = new Map<string, PaperAccount>();
   private quoteCache = new Map<SupportedSymbol, CachedQuote>();
   private readonly quoteTtlMs = 15_000;
   private readonly quoteServiceBaseUrl = process.env.STOCK_QUOTE_SERVICE_URL ?? "http://127.0.0.1:8001";
@@ -53,24 +48,34 @@ class PaperTradingService {
     return SUPPORTED_SYMBOLS;
   }
 
-  linkPaperAccount(userId: string, startingCash = 100_000) {
-    const existing = this.accounts.get(userId);
+  async linkPaperAccount(userId: string, startingCash = 100_000) {
+    const existing = await prisma.paperAccount.findUnique({
+      where: { userId }
+    });
+
     if (existing?.linked) {
       return { linked: true, alreadyLinked: true, cashBalance: existing.cashBalance };
     }
 
-    const account: PaperAccount = {
-      linked: true,
-      cashBalance: startingCash,
-      positions: new Map(),
-      transactions: []
-    };
-    this.accounts.set(userId, account);
-    return { linked: true, alreadyLinked: false, cashBalance: startingCash };
+    const account = await prisma.paperAccount.upsert({
+      where: { userId },
+      update: { linked: true },
+      create: {
+        userId,
+        cashBalance: startingCash,
+        linked: true
+      }
+    });
+
+    return { linked: true, alreadyLinked: false, cashBalance: account.cashBalance };
   }
 
-  isLinked(userId: string) {
-    return this.accounts.get(userId)?.linked === true;
+  async isLinked(userId: string) {
+    const account = await prisma.paperAccount.findUnique({
+      where: { userId },
+      select: { linked: true }
+    });
+    return account?.linked === true;
   }
 
   private getSyntheticQuote(symbol: SupportedSymbol): LiveQuote {
@@ -129,7 +134,10 @@ class PaperTradingService {
     side: "buy" | "sell";
     quantity: number;
   }) {
-    const account = this.accounts.get(args.userId);
+    const account = await prisma.paperAccount.findUnique({
+      where: { userId: args.userId },
+      include: { positions: true }
+    });
     if (!account?.linked) {
       return { ok: false as const, error: "Paper account is not linked." };
     }
@@ -145,55 +153,101 @@ class PaperTradingService {
     }
 
     const notional = Number((quote.currentPrice * quantity).toFixed(2));
-    const position = account.positions.get(quote.symbol);
+    const position = account.positions.find(p => p.symbol === quote.symbol);
 
-    if (args.side === "buy") {
-      if (account.cashBalance < notional) {
-        return { ok: false as const, error: "Insufficient cash balance for this trade." };
+    return await prisma.$transaction(async (tx) => {
+      if (args.side === "buy") {
+        if (account.cashBalance < notional) {
+          return { ok: false as const, error: "Insufficient cash balance for this trade." };
+        }
+        const prevQty = position?.quantity ?? 0;
+        const prevCost = position?.averageCost ?? 0;
+        const newQty = prevQty + quantity;
+        const newAvg = Number((((prevQty * prevCost) + notional) / newQty).toFixed(4));
+
+        if (position) {
+          await tx.paperPosition.update({
+            where: { id: position.id },
+            data: { quantity: newQty, averageCost: newAvg }
+          });
+        } else {
+          await tx.paperPosition.create({
+            data: {
+              userId: args.userId,
+              symbol: quote.symbol,
+              name: quote.name,
+              quantity: newQty,
+              averageCost: newAvg
+            }
+          });
+        }
+
+        await tx.paperAccount.update({
+          where: { userId: args.userId },
+          data: { cashBalance: { decrement: notional } }
+        });
+      } else {
+        const heldQty = position?.quantity ?? 0;
+        if (heldQty < quantity) {
+          return { ok: false as const, error: "Not enough shares to sell." };
+        }
+        const remaining = heldQty - quantity;
+
+        if (remaining === 0) {
+          await tx.paperPosition.delete({
+            where: { id: position!.id }
+          });
+        } else {
+          await tx.paperPosition.update({
+            where: { id: position!.id },
+            data: { quantity: remaining }
+          });
+        }
+
+        await tx.paperAccount.update({
+          where: { userId: args.userId },
+          data: { cashBalance: { increment: notional } }
+        });
       }
-      const prevQty = position?.quantity ?? 0;
-      const prevCost = position?.averageCost ?? 0;
-      const newQty = prevQty + quantity;
-      const newAvg = Number((((prevQty * prevCost) + notional) / newQty).toFixed(4));
-      account.positions.set(quote.symbol, {
-        symbol: quote.symbol,
-        name: quote.name,
-        quantity: newQty,
-        averageCost: newAvg
+
+      const transaction = await tx.paperTransaction.create({
+        data: {
+          userId: args.userId,
+          symbol: quote.symbol,
+          side: args.side,
+          quantity,
+          price: quote.currentPrice
+        }
       });
-      account.cashBalance = Number((account.cashBalance - notional).toFixed(2));
-    } else {
-      const heldQty = position?.quantity ?? 0;
-      if (heldQty < quantity) {
-        return { ok: false as const, error: "Not enough shares to sell." };
-      }
-      const remaining = heldQty - quantity;
-      if (remaining === 0) {
-        account.positions.delete(quote.symbol);
-      } else if (position) {
-        account.positions.set(quote.symbol, { ...position, quantity: remaining });
-      }
-      account.cashBalance = Number((account.cashBalance + notional).toFixed(2));
-    }
 
-    const transaction: Transaction = {
-      id: `paper_${Date.now()}`,
-      symbol: quote.symbol,
-      side: args.side,
-      quantity,
-      price: quote.currentPrice,
-      occurredAt: new Date().toISOString()
-    };
-    account.transactions.unshift(transaction);
-    return { ok: true as const, transaction, cashBalance: account.cashBalance };
+      const updatedAccount = await tx.paperAccount.findUnique({
+        where: { userId: args.userId }
+      });
+
+      return {
+        ok: true as const,
+        transaction: {
+          id: transaction.id,
+          symbol: transaction.symbol,
+          side: transaction.side as "buy" | "sell",
+          quantity: transaction.quantity,
+          price: transaction.price,
+          occurredAt: transaction.occurredAt.toISOString()
+        },
+        cashBalance: updatedAccount!.cashBalance
+      };
+    });
   }
 
   async getPortfolio(userId: string): Promise<Portfolio | null> {
-    const account = this.accounts.get(userId);
+    const account = await prisma.paperAccount.findUnique({
+      where: { userId },
+      include: { positions: true }
+    });
     if (!account?.linked) return null;
 
     const holdings = await Promise.all(
-      Array.from(account.positions.values()).map(async (position) => {
+      account.positions.map(async (position) => {
         const quote = await this.getQuote(position.symbol);
         const currentPrice = quote?.currentPrice ?? position.averageCost;
         const changePct =
@@ -224,10 +278,27 @@ class PaperTradingService {
     };
   }
 
-  getTransactions(userId: string): Transaction[] | null {
-    const account = this.accounts.get(userId);
+  async getTransactions(userId: string): Promise<Transaction[] | null> {
+    const account = await prisma.paperAccount.findUnique({
+      where: { userId },
+      select: { linked: true }
+    });
     if (!account?.linked) return null;
-    return account.transactions.slice(0, 50);
+
+    const transactions = await prisma.paperTransaction.findMany({
+      where: { userId },
+      orderBy: { occurredAt: 'desc' },
+      take: 50
+    });
+
+    return transactions.map(t => ({
+      id: t.id,
+      symbol: t.symbol,
+      side: t.side as "buy" | "sell",
+      quantity: t.quantity,
+      price: t.price,
+      occurredAt: t.occurredAt.toISOString()
+    }));
   }
 }
 

@@ -11,7 +11,7 @@
     "dev": "npm run dev --workspace backend & npm run dev --workspace frontend",
     "dev:frontend": "npm run dev --workspace frontend",
     "dev:backend": "npm run dev --workspace backend",
-    "dev:quotes": "python -m uvicorn quote_service:app --app-dir python-quote-service --host 127.0.0.1 --port 8001",
+    "dev:quotes": "python -m uvicorn quote_service:app --app-dir python-quote-service --host 0.0.0.0 --port 8001",
     "start:all": "npx concurrently \"npm run dev --workspace backend\" \"npm run dev --workspace frontend\" \"npm run dev:quotes\"",
     "build": "npm run build --workspace shared && npm run build --workspace backend && npm run build --workspace frontend"
   }

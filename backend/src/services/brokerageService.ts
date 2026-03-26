@@ -55,7 +55,7 @@ export class BrokerageService {
   }
 
   async getTransactions(userId: string): Promise<Transaction[]> {
-    const paperTransactions = paperTradingService.getTransactions(userId);
+    const paperTransactions = await paperTradingService.getTransactions(userId);
     if (paperTransactions) return paperTransactions;
     // TODO: Fetch transaction history from real brokerage provider.
     return mockTransactions;

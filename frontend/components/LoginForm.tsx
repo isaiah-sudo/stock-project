@@ -49,7 +49,7 @@ export function LoginForm() {
       localStorage.setItem("token", data.token);
       router.push("/dashboard");
     } catch {
-      setError("Demo login failed. Check that backend is running on localhost:4000.");
+      setError("Demo login failed. Check that the backend server is running and accessible.");
     } finally {
       setLoading(false);
     }

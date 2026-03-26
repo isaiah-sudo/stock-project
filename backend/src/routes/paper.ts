@@ -6,8 +6,8 @@ import type { AuthRequest } from "../types.js";
 
 const router = Router();
 
-router.post("/link", requireAuth, (req: AuthRequest, res) => {
-  const result = paperTradingService.linkPaperAccount(req.user!.userId);
+router.post("/link", requireAuth, async (req: AuthRequest, res) => {
+  const result = await paperTradingService.linkPaperAccount(req.user!.userId);
   return res.json({
     linked: true,
     provider: "paper",
