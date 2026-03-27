@@ -60,13 +60,13 @@ const mockLinkSchema = z.object({
   providerId: z.enum(["paper", "manual"])
 });
 
-router.post("/mock-link", requireAuth, (req, res) => {
+router.post("/mock-link", requireAuth, async (req, res) => {
   const parsed = mockLinkSchema.safeParse(req.body);
   if (!parsed.success) {
     return res.status(400).json({ error: parsed.error.flatten() });
   }
   if (parsed.data.providerId === "paper") {
-    const linked = paperTradingService.linkPaperAccount((req as AuthRequest).user!.userId);
+    const linked = await paperTradingService.linkPaperAccount((req as AuthRequest).user!.userId);
     return res.json({
       linked: true,
       provider: "paper",
