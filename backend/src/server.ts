@@ -1,4 +1,5 @@
 import "dotenv/config";
+import { onRequest } from "firebase-functions/v2/https";
 import os from "os";
 import cors from "cors";
 import express from "express";
@@ -73,16 +74,22 @@ app.use("/api/portfolio", portfolioRoutes);
 app.use("/api/chat", chatRoutes);
 app.use("/api/paper", paperRoutes);
 
-app.listen(port, "0.0.0.0", () => {
-  const lanIp = getLanIp();
-  // eslint-disable-next-line no-console
-  console.log(`\n🚀 Backend ready at:`);
-  // eslint-disable-next-line no-console
-  console.log(`   Local:   http://localhost:${port}`);
-  if (lanIp) {
+// Only start the server locally if not running as a Cloud Function
+if (process.env.NODE_ENV !== "production" && !process.env.FUNCTIONS_EMULATOR) {
+  app.listen(port, "0.0.0.0", () => {
+    const lanIp = getLanIp();
     // eslint-disable-next-line no-console
-    console.log(`   Network: http://${lanIp}:${port}`);
-  }
-  // eslint-disable-next-line no-console
-  console.log(`\n📡 API endpoints available at /api/*`);
-});
+    console.log(`\n🚀 Backend ready at:`);
+    // eslint-disable-next-line no-console
+    console.log(`   Local:   http://localhost:${port}`);
+    if (lanIp) {
+      // eslint-disable-next-line no-console
+      console.log(`   Network: http://${lanIp}:${port}`);
+    }
+    // eslint-disable-next-line no-console
+    console.log(`\n📡 API endpoints available at /api/*`);
+  });
+}
+
+// Export the Firebase Function
+export const api = onRequest({ cors: true, maxInstances: 10 }, app);
