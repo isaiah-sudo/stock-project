@@ -8,20 +8,37 @@ datasource db {
 }
 
 model User {
-  id           String   @id @default(cuid())
-  email        String   @unique
-  passwordHash String
-  createdAt    DateTime @default(now())
+  id               String   @id @default(cuid())
+  email            String   @unique
+  passwordHash     String
+  experiencePoints Int      @default(0)
+  createdAt        DateTime @default(now())
+
+  paperAccount     PaperAccount?
+  achievements     Achievement[]
+}
+
+model Achievement {
+  id        String   @id @default(cuid())
+  userId    String
+  type      String   // "FIRST_TRADE", "TEN_PCT_GAIN", etc.
+  unlockedAt DateTime @default(now())
+
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, type])
+  @@map("achievements")
 }
 
 model PaperAccount {
   userId      String @id
-  cashBalance Float @default(100000)
+  cashBalance Float @default(10000)
   linked      Boolean @default(false)
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
-  positions   PaperPosition[]
+  user         User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  positions    PaperPosition[]
   transactions PaperTransaction[]
 
   @@map("paper_accounts")

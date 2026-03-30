@@ -16,6 +16,27 @@ router.post("/link", requireAuth, async (req: AuthRequest, res) => {
   });
 });
 
+router.get("/portfolio", requireAuth, async (req: AuthRequest, res) => {
+  const userId = req.user!.userId;
+  const portfolio = await paperTradingService.getPortfolio(userId);
+  if (!portfolio) {
+    return res.status(404).json({ error: "Paper account not linked." });
+  }
+  return res.json(portfolio);
+});
+
+router.get("/achievements", requireAuth, async (req: AuthRequest, res) => {
+  const userId = req.user!.userId;
+  const achievements = await paperTradingService.getAchievements(userId);
+  return res.json(achievements);
+});
+
+router.get("/transactions", requireAuth, async (req: AuthRequest, res) => {
+  const userId = req.user!.userId;
+  const transactions = await paperTradingService.getTransactions(userId);
+  return res.json(transactions || []);
+});
+
 router.get("/symbols", requireAuth, (_req, res) => {
   return res.json({ symbols: paperTradingService.getSupportedSymbols() });
 });

@@ -10,6 +10,7 @@ import brokerageRoutes from "./routes/brokerage.js";
 import portfolioRoutes from "./routes/portfolio.js";
 import chatRoutes from "./routes/chat.js";
 import paperRoutes from "./routes/paper.js";
+import leaderboardRoutes from "./routes/leaderboard.js";
 
 function getLanIp(): string | null {
   const interfaces = os.networkInterfaces();
@@ -27,6 +28,9 @@ function getLanIp(): string | null {
 
 const app = express();
 const port = Number(process.env.PORT ?? 4000);
+
+// Required for express-rate-limit to work behind Cloudflare or Firebase
+app.set("trust proxy", 1);
 
 app.use(helmet());
 app.use(
@@ -73,6 +77,7 @@ app.use("/api/brokerage", brokerageRoutes);
 app.use("/api/portfolio", portfolioRoutes);
 app.use("/api/chat", chatRoutes);
 app.use("/api/paper", paperRoutes);
+app.use("/api/leaderboard", leaderboardRoutes);
 
 // Only start the server locally if not running as a Cloud Function
 if (process.env.NODE_ENV !== "production" && !process.env.FUNCTIONS_EMULATOR) {
