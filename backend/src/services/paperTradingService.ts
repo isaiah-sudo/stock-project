@@ -74,6 +74,32 @@ class PaperTradingService {
     return SUPPORTED_SYMBOLS;
   }
 
+  getSupportedMetadata() {
+    return SUPPORTED_SYMBOLS.map(symbol => ({
+      symbol,
+      name: SYMBOL_META[symbol].name
+    }));
+  }
+
+  isMarketOpen(): boolean {
+    const now = new Date();
+    // Convert current time to EST (New York Time)
+    const estDate = new Date(now.toLocaleString("en-US", { timeZone: "America/New_York" }));
+    const day = estDate.getDay(); // 0 is Sunday, 6 is Saturday
+    const hours = estDate.getHours();
+    const minutes = estDate.getMinutes();
+
+    // Weekend check
+    if (day === 0 || day === 6) return false;
+
+    // Market hours: 9:30 AM - 4:00 PM EST
+    const timeInMinutes = hours * 60 + minutes;
+    const openTime = 9 * 60 + 30;
+    const closeTime = 16 * 60;
+
+    return timeInMinutes >= openTime && timeInMinutes < closeTime;
+  }
+
   async linkPaperAccount(userId: string, startingCash = 100_000) {
     const existing = await prisma.paperAccount.findUnique({
       where: { userId }

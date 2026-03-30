@@ -19,6 +19,7 @@ const PerformanceChart = dynamic(() => import("../../components/PerformanceChart
 export default function DashboardPage() {
   const [portfolio, setPortfolio] = useState<Portfolio | null>(null);
   const [error, setError] = useState("");
+  const [marketOpen, setMarketOpen] = useState(true);
 
   function loadPortfolio() {
     apiFetch<Portfolio>("/paper/portfolio")
@@ -29,9 +30,19 @@ export default function DashboardPage() {
       });
   }
 
+  function loadMarketStatus() {
+    apiFetch<{ open: boolean }>("/paper/market-status")
+      .then((data) => setMarketOpen(data.open))
+      .catch(() => {});
+  }
+
   useEffect(() => {
     loadPortfolio();
-    const interval = window.setInterval(loadPortfolio, 30_000); // 30s for better performance
+    loadMarketStatus();
+    const interval = window.setInterval(() => {
+      loadPortfolio();
+      loadMarketStatus();
+    }, 30_000); // 30s for better performance
     return () => window.clearInterval(interval);
   }, []);
 
@@ -48,8 +59,8 @@ export default function DashboardPage() {
           </div>
           <div className="flex items-center gap-3">
              <span className="rounded-2xl bg-white px-5 py-2.5 text-sm font-bold shadow-sm border border-slate-100 flex items-center gap-2">
-                <span className="h-2 w-2 rounded-full bg-green-500 animate-pulse"></span>
-                Markets Open
+                <span className={`h-2 w-2 rounded-full ${marketOpen ? "bg-green-500 animate-pulse" : "bg-red-500"}`}></span>
+                {marketOpen ? "Markets Open" : "Markets Closed"}
              </span>
           </div>
         </header>

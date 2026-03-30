@@ -38,7 +38,14 @@ router.get("/transactions", requireAuth, async (req: AuthRequest, res) => {
 });
 
 router.get("/symbols", requireAuth, (_req, res) => {
-  return res.json({ symbols: paperTradingService.getSupportedSymbols() });
+  return res.json({ 
+    symbols: paperTradingService.getSupportedSymbols(),
+    metadata: paperTradingService.getSupportedMetadata()
+  });
+});
+
+router.get("/market-status", (_req, res) => {
+  return res.json({ open: paperTradingService.isMarketOpen() });
 });
 
 const quoteSchema = z.object({
