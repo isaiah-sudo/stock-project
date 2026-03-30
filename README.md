@@ -1,53 +1,109 @@
-# Financial Advisor App Foundation
+📈 Gamified Stock Simulator App
+A modern, educational, game‑style stock‑trading simulator where users learn investing by playing.
+This app focuses on fun, competition, and learning through volatility, with a clean UI and a realistic‑feeling trading loop.
 
-Production-ready starter for a modern financial advisor web app with:
-- OAuth-ready brokerage linking (Webull placeholder)
-- Portfolio + transactions APIs
-- Local Ollama-powered AI chat assistant
-- Security-first backend patterns
-- Mobile-friendly frontend dashboard
+🎮 Core Features
+💰 Virtual Trading
+Every new user starts with $10,000 virtual cash
 
-## Stack
-- Frontend: Next.js + TypeScript + Tailwind CSS
-- Backend: Node.js + Express + TypeScript
-- Database: PostgreSQL via Prisma
-- Auth: JWT (access token flow)
-- AI: Local Ollama REST API
+Buy and sell from hundreds of stocks
 
-## Project Structure
+Real‑time or fallback synthetic pricing
 
-```txt
+Portfolio value updates dynamically
+
+Designed to show volatility clearly so users learn how markets move
+
+🏆 Leaderboard
+Ranks users by total portfolio value
+
+Updates automatically as trades happen
+
+Encourages friendly competition and long‑term strategy
+
+👤 Persistent Accounts
+JWT‑based authentication
+
+Saved portfolios, trades, and balances
+
+Works across devices
+
+Secure backend patterns to protect user data
+
+🤖 Educational AI Assistant (Optional)
+Powered by local Ollama
+
+Explains market concepts in simple language
+
+Helps users understand volatility, risk, and order types
+
+Never gives personalized financial advice
+
+🧱 Tech Stack
+Frontend
+Next.js
+
+TypeScript
+
+Tailwind CSS
+
+Backend
+Node.js
+
+Express
+
+TypeScript
+
+Prisma ORM
+
+PostgreSQL
+
+AI (Optional)
+Local Ollama REST API for educational explanations
+
+Live Market Data
+Python quote service
+
+Alpha Vantage + yfinance fallback
+
+Synthetic pricing when APIs fail (ensures the game always works)
+
+📁 Project Structure
+Code
 .
-├─ frontend/                # Next.js app
-├─ backend/                 # Express API
+├─ frontend/                # Next.js app (dashboard, charts, leaderboard)
+├─ backend/                 # Express API (auth, trades, accounts, leaderboard)
 └─ shared/                  # Shared TypeScript types
-```
-
-## Quick Start
-
+⚡ Quick Start
 1. Install dependencies
-   - `npm install`
+Code
+npm install
 2. Configure environment variables
-   - Copy `backend/.env.example` to `backend/.env`
-   - Copy `frontend/.env.local.example` to `frontend/.env.local`
-3. Ensure Ollama is running locally if you want live AI responses:
-   - `ollama serve`
-4. Set up Python quote service dependencies:
-   - `pip install -r python-quote-service/requirements.txt`
-5. Run dev servers:
-   - `npm run dev`
-6. Run all services in one command:
-   - `npm run start:all`
-7. Run live quote service (Python):
-   - `npm run dev:quotes`
+Code
+backend/.env.example → backend/.env
+frontend/.env.local.example → frontend/.env.local
+3. (Optional) Enable AI assistant
+Code
+ollama serve
+4. Install Python quote service dependencies
+Code
+pip install -r python-quote-service/requirements.txt
+5. Run development servers
+Code
+npm run dev
+6. Run all services together
+Code
+npm run start:all
+7. Run quote service
+Code
+npm run dev:quotes
+📚 Notes
+Brokerage integration removed in favor of a pure simulation model
 
-## Live Quote Provider
-- **Primary:** Alpha Vantage (if `ALPHA_VANTAGE_API_KEY` is set in your environment)
-- **Fallback:** yfinance (no API key required)
-- Backend uses `STOCK_QUOTE_SERVICE_URL` (default `http://127.0.0.1:8001`) to fetch quotes.
-- If both providers fail, paper trading falls back to synthetic prices so orders still work.
+Backend and frontend updated to support gamification features
 
-## Notes
-- Brokerage integration files are scaffolded with placeholder Webull OAuth methods.
-- Mock data is included for local development when brokerage data is unavailable.
-- AI responses include safety guardrails to avoid personalized financial advice.
+AI assistant includes safety guardrails
+
+Synthetic prices ensure the game always works even if APIs fail
+
+Designed to be educational, not financial advice
