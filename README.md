@@ -1,7 +1,7 @@
 # Financial Advisor App Foundation
 
-Production-ready starter for a modern financial advisor web app with:
-- OAuth-ready brokerage linking (Webull placeholder)
+Production-ready starter for a beginner paper trading stock game app:
+- Basic paper trading capabilities
 - Portfolio + transactions APIs
 - Local Ollama-powered AI chat assistant
 - Security-first backend patterns
