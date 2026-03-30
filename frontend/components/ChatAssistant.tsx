@@ -9,7 +9,7 @@ interface Message {
 }
 
 export function ChatAssistant() {
-  const [model, setModel] = useState("llama3.2");
+  const [model, setModel] = useState("llama3.2:1b");
   const [input, setInput] = useState("");
   const [messages, setMessages] = useState<Message[]>([
     {

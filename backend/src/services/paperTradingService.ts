@@ -4,7 +4,10 @@ import { computePortfolioDayMetrics } from "./portfolioMetrics.js";
 
 const prisma = new PrismaClient();
 
-type SupportedSymbol = "AAPL" | "MSFT" | "NVDA" | "AMZN" | "GOOGL" | "TSLA" | "META";
+type SupportedSymbol = 
+  "AAPL" | "MSFT" | "NVDA" | "AMZN" | "GOOGL" | "TSLA" | "META" | "BRK-B" | "UNH" | "V" | 
+  "JPM" | "LLY" | "AVGO" | "XOM" | "MA" | "JNJ" | "PG" | "COST" | "HD" | "ADBE" | 
+  "NFLX" | "AMD" | "DIS" | "CRM" | "INTC" | "PYPL" | "VOO" | "QQQ" | "SPY" | "BABA";
 
 interface Position {
   symbol: SupportedSymbol;
@@ -34,7 +37,30 @@ const SYMBOL_META: Record<SupportedSymbol, { name: string; basePrice: number }> 
   AMZN: { name: "Amazon.com Inc.", basePrice: 186 },
   GOOGL: { name: "Alphabet Inc.", basePrice: 171 },
   TSLA: { name: "Tesla Inc.", basePrice: 190 },
-  META: { name: "Meta Platforms Inc.", basePrice: 495 }
+  META: { name: "Meta Platforms Inc.", basePrice: 495 },
+  "BRK-B": { name: "Berkshire Hathaway Inc.", basePrice: 415 },
+  UNH: { name: "UnitedHealth Group Inc.", basePrice: 480 },
+  V: { name: "Visa Inc.", basePrice: 280 },
+  JPM: { name: "JPMorgan Chase & Co.", basePrice: 195 },
+  LLY: { name: "Eli Lilly and Co.", basePrice: 770 },
+  AVGO: { name: "Broadcom Inc.", basePrice: 1300 },
+  XOM: { name: "Exxon Mobil Corp.", basePrice: 120 },
+  MA: { name: "Mastercard Inc.", basePrice: 470 },
+  JNJ: { name: "Johnson & Johnson", basePrice: 160 },
+  PG: { name: "Procter & Gamble Co.", basePrice: 160 },
+  COST: { name: "Costco Wholesale Corp.", basePrice: 730 },
+  HD: { name: "Home Depot Inc.", basePrice: 350 },
+  ADBE: { name: "Adobe Inc.", basePrice: 500 },
+  NFLX: { name: "Netflix Inc.", basePrice: 620 },
+  AMD: { name: "Advanced Micro Devices Inc.", basePrice: 180 },
+  DIS: { name: "Walt Disney Co.", basePrice: 110 },
+  CRM: { name: "Salesforce Inc.", basePrice: 300 },
+  INTC: { name: "Intel Corp.", basePrice: 40 },
+  PYPL: { name: "PayPal Holdings Inc.", basePrice: 65 },
+  VOO: { name: "Vanguard S&P 500 ETF", basePrice: 470 },
+  QQQ: { name: "Invesco QQQ Trust", basePrice: 440 },
+  SPY: { name: "SPDR S&P 500 ETF Trust", basePrice: 515 },
+  BABA: { name: "Alibaba Group Holding Ltd.", basePrice: 75 }
 };
 
 const SUPPORTED_SYMBOLS = Object.keys(SYMBOL_META) as SupportedSymbol[];
@@ -46,6 +72,32 @@ class PaperTradingService {
 
   getSupportedSymbols() {
     return SUPPORTED_SYMBOLS;
+  }
+
+  getSupportedMetadata() {
+    return SUPPORTED_SYMBOLS.map(symbol => ({
+      symbol,
+      name: SYMBOL_META[symbol].name
+    }));
+  }
+
+  isMarketOpen(): boolean {
+    const now = new Date();
+    // Convert current time to EST (New York Time)
+    const estDate = new Date(now.toLocaleString("en-US", { timeZone: "America/New_York" }));
+    const day = estDate.getDay(); // 0 is Sunday, 6 is Saturday
+    const hours = estDate.getHours();
+    const minutes = estDate.getMinutes();
+
+    // Weekend check
+    if (day === 0 || day === 6) return false;
+
+    // Market hours: 9:30 AM - 4:00 PM EST
+    const timeInMinutes = hours * 60 + minutes;
+    const openTime = 9 * 60 + 30;
+    const closeTime = 16 * 60;
+
+    return timeInMinutes >= openTime && timeInMinutes < closeTime;
   }
 
   async linkPaperAccount(userId: string, startingCash = 100_000) {
@@ -224,6 +276,17 @@ class PaperTradingService {
         where: { userId: args.userId }
       });
 
+      // Track FIRST_TRADE achievement
+      try {
+        await tx.achievement.upsert({
+          where: { userId_type: { userId: args.userId, type: "FIRST_TRADE" } },
+          update: {},
+          create: { userId: args.userId, type: "FIRST_TRADE" }
+        });
+      } catch (e) {
+        // Achievement already exists or other error
+      }
+
       return {
         ok: true as const,
         transaction: {
@@ -268,6 +331,15 @@ class PaperTradingService {
       cashBalance: account.cashBalance,
       holdings
     });
+
+    // Check for performance achievements
+    if (totalValue >= 11000) {
+      await this.unlockAchievement(userId, "TEN_PCT_GAIN");
+    }
+    if (totalValue >= 20000) {
+      await this.unlockAchievement(userId, "ALL_STAR");
+    }
+
     return {
       accountId: "paper-account",
       cashBalance: account.cashBalance,
@@ -299,6 +371,54 @@ class PaperTradingService {
       price: t.price,
       occurredAt: t.occurredAt.toISOString()
     }));
+  }
+
+  async getLeaderboard() {
+    const accounts = await prisma.paperAccount.findMany({
+      include: { 
+        user: { select: { email: true, experiencePoints: true } },
+        positions: true 
+      }
+    });
+
+    const rankings = await Promise.all(
+      accounts.map(async (account) => {
+        let holdingsValue = 0;
+        for (const pos of account.positions) {
+          const quote = await this.getQuote(pos.symbol);
+          const price = quote?.currentPrice ?? pos.averageCost;
+          holdingsValue += pos.quantity * price;
+        }
+        
+        return {
+          userId: account.userId,
+          email: account.user.email.split("@")[0], // Mask email for privacy
+          totalValue: Number((account.cashBalance + holdingsValue).toFixed(2)),
+          exp: account.user.experiencePoints
+        };
+      })
+    );
+
+    return rankings.sort((a, b) => b.totalValue - a.totalValue).slice(0, 20);
+  }
+
+  async unlockAchievement(userId: string, type: string) {
+    try {
+      await prisma.achievement.upsert({
+        where: { userId_type: { userId, type } },
+        update: {},
+        create: { userId, type }
+      });
+    } catch {
+      // Ignored
+    }
+  }
+
+  async getAchievements(userId: string) {
+    return prisma.achievement.findMany({
+      where: { userId },
+      orderBy: { unlockedAt: "desc" }
+    });
   }
 }
 
