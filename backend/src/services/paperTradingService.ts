@@ -287,6 +287,9 @@ class PaperTradingService {
         // Achievement already exists or other error
       }
 
+      // Award 10 XP for every completed trade
+      await this.awardXP(tx, args.userId, 10);
+
       return {
         ok: true as const,
         transaction: {
@@ -300,6 +303,20 @@ class PaperTradingService {
         cashBalance: updatedAccount!.cashBalance
       };
     });
+  }
+
+  /**
+   * Internal helper to award XP to a user.
+   */
+  private async awardXP(tx: any, userId: string, amount: number) {
+    try {
+      await tx.user.update({
+        where: { id: userId },
+        data: { experiencePoints: { increment: amount } }
+      });
+    } catch (e) {
+      console.error(`Failed to award ${amount} XP to user ${userId}:`, e);
+    }
   }
 
   async getPortfolio(userId: string): Promise<Portfolio | null> {
@@ -404,13 +421,21 @@ class PaperTradingService {
 
   async unlockAchievement(userId: string, type: string) {
     try {
-      await prisma.achievement.upsert({
-        where: { userId_type: { userId, type } },
-        update: {},
-        create: { userId, type }
+      await prisma.$transaction(async (tx) => {
+        const existing = await tx.achievement.findUnique({
+          where: { userId_type: { userId, type } }
+        });
+
+        if (!existing) {
+          await tx.achievement.create({
+            data: { userId, type }
+          });
+          // Award 50 XP for unlocking an achievement
+          await this.awardXP(tx, userId, 50);
+        }
       });
-    } catch {
-      // Ignored
+    } catch (e) {
+      console.error(`Failed to unlock achievement ${type} for user ${userId}:`, e);
     }
   }
 
