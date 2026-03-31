@@ -15,7 +15,15 @@ const firebaseConfig = {
 // Initialize Firebase
 const app = getApps().length === 0 ? initializeApp(firebaseConfig) : getApp();
 
-// Initialize Analytics (only on client side and if supported)
-const analytics = typeof window !== "undefined" ? isSupported().then(yes => yes ? getAnalytics(app) : null) : null;
+// Export a function to get analytics safely on the client
+export const getFirebaseAnalytics = async () => {
+  if (typeof window !== "undefined") {
+    const { getAnalytics, isSupported } = await import("firebase/analytics");
+    if (await isSupported()) {
+      return getAnalytics(app);
+    }
+  }
+  return null;
+};
 
-export { app, analytics };
+export { app };
