@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { trackEvent } from "../lib/firebase";
 
 const API_BASE = process.env.NEXT_PUBLIC_API_BASE_URL ?? "http://localhost:4000/api";
 
@@ -26,15 +27,33 @@ export function AuthForm() {
         body: JSON.stringify({ email, password })
       });
       
-      const data = await response.json();
+      const contentType = response.headers.get("content-type");
+      let data: any = {};
+      
+      if (contentType && contentType.includes("application/json")) {
+        data = await response.json();
+      } else {
+        // Handle non-JSON responses (e.g., Cloudflare tunnel errors)
+        const text = await response.text();
+        console.error("Non-JSON response received:", text);
+        throw new Error(`Server returned an unexpected response. The tunnel might be down or expired.`);
+      }
+
       if (!response.ok) {
+        trackEvent("auth_failure", { method: isLogin ? "login" : "signup", error: data.error });
         throw new Error(data.error || "Authentication failed");
       }
       
+      trackEvent("auth_success", { method: isLogin ? "login" : "signup" });
       localStorage.setItem("token", data.token);
       router.push("/dashboard");
     } catch (err: any) {
-      setError(err.message);
+      console.error("Auth error:", err);
+      setError(err.message === "Failed to fetch" 
+        ? "Network error: Connection to the server failed. Check if the backend tunnel is running." 
+        : err.message
+      );
+      trackEvent("auth_error_catch", { error: err.message });
     } finally {
       setLoading(false);
     }
