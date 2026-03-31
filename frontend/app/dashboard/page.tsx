@@ -26,7 +26,7 @@ export default function DashboardPage() {
       .then(setPortfolio)
       .catch((err) => {
         console.error(err);
-        setError("Could not load portfolio. Please sign in again.");
+        setError(err.message);
       });
   }
 

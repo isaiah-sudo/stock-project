@@ -32,14 +32,17 @@ export function PaperTradingPanel({ onTradeCompleted }: { onTradeCompleted: () =
         setSymbol(data.symbols[0] ?? "AAPL");
         setStatus("Paper trading ready.");
       })
-      .catch(() => setStatus("Link your paper account first from the account linking page."));
+      .catch((err) => setStatus(err.message));
   }, []);
 
   useEffect(() => {
     if (!symbol) return;
     apiFetch<Quote>(`/paper/quote?symbol=${encodeURIComponent(symbol)}`)
       .then(setQuote)
-      .catch(() => setQuote(null));
+      .catch((err) => {
+        console.error(err);
+        setQuote(null);
+      });
   }, [symbol]);
 
   const filteredMetadata = useMemo(() => {
@@ -67,8 +70,8 @@ export function PaperTradingPanel({ onTradeCompleted }: { onTradeCompleted: () =
       onTradeCompleted();
       const updated = await apiFetch<Quote>(`/paper/quote?symbol=${encodeURIComponent(symbol)}`);
       setQuote(updated);
-    } catch {
-      setStatus("Order failed. Ensure paper account is linked and quantity is valid.");
+    } catch (err: any) {
+      setStatus(err.message);
     }
   }
 

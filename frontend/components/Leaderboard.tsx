@@ -13,14 +13,22 @@ interface LeaderboardEntry {
 export function Leaderboard() {
   const [entries, setEntries] = useState<LeaderboardEntry[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
 
   useEffect(() => {
     apiFetch<LeaderboardEntry[]>("/leaderboard")
       .then(setEntries)
+      .catch((err) => setError(err.message))
       .finally(() => setLoading(false));
   }, []);
 
-  if (loading) return <div className="p-8 text-center text-slate-500">Loading rankings...</div>;
+  if (loading) return <div className="p-8 text-center text-slate-500 font-medium bg-white rounded-3xl border border-slate-100 animate-pulse">Loading rankings...</div>;
+
+  if (error) return (
+    <div className="p-8 rounded-3xl border border-red-100 bg-red-50 text-center text-red-600 font-bold">
+      {error}
+    </div>
+  );
 
   return (
     <div className="overflow-hidden rounded-3xl border border-slate-100 bg-white shadow-xl">
