@@ -2,15 +2,18 @@
 
 import { useEffect } from "react";
 import { isSupported } from "firebase/analytics";
-import { analytics } from "../lib/firebase";
+import { getFirebaseAnalytics } from "../lib/firebase";
 
 export function AnalyticsReporter() {
   useEffect(() => {
     const initAnalytics = async () => {
       try {
         const supported = await isSupported();
-        if (supported && analytics) {
-          console.log("Firebase Analytics initialized");
+        if (supported) {
+          const analytics = await getFirebaseAnalytics();
+          if (analytics) {
+            console.log("Firebase Analytics initialized");
+          }
         }
       } catch (err) {
         console.error("Firebase Analytics failed to initialize:", err);
