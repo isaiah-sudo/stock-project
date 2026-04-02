@@ -12,9 +12,10 @@ export function PortfolioOverview({ portfolio }: { portfolio: Portfolio }) {
   };
 
   const rank = getRank(portfolio.totalValue);
+  const marketValue = portfolio.totalValue - portfolio.cashBalance;
 
   return (
-    <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
+    <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-5">
       <StatCard 
         label="Net Worth" 
         value={`$${portfolio.totalValue.toLocaleString(undefined, { minimumFractionDigits: 2 })}`}
@@ -25,6 +26,11 @@ export function PortfolioOverview({ portfolio }: { portfolio: Portfolio }) {
         label="Available Cash" 
         value={`$${portfolio.cashBalance.toLocaleString(undefined, { minimumFractionDigits: 2 })}`}
         icon="💵"
+      />
+      <StatCard 
+        label="Market Value" 
+        value={`$${marketValue.toLocaleString(undefined, { minimumFractionDigits: 2 })}`}
+        icon="📊"
       />
       <div className="group relative overflow-hidden rounded-3xl bg-white p-6 shadow-xl border border-slate-100 transition-all hover:shadow-2xl hover:-translate-y-1">
         <div className="flex items-center justify-between">
