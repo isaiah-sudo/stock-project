@@ -16,6 +16,7 @@ export interface Portfolio {
   dayChangePct: number;
   /** Estimated $ change today on equity (cash excluded); from quote day % on each holding */
   dayChangeDollar?: number;
+  experiencePoints?: number;
   holdings: Holding[];
 }
 

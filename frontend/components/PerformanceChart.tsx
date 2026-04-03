@@ -16,10 +16,10 @@ export function PerformanceChart({ portfolio }: { portfolio: Portfolio }) {
   const { totalValue, dayChangeDollar = 0, dayChangePct } = portfolio;
 
   const chartData = useMemo(() => {
-    // We'll generate 24 points representing a volatile path for today
-    const dataPoints = 24;
-    const startValue = totalValue - dayChangeDollar;
+    const marketValue = totalValue - (portfolio.cashBalance ?? 0);
+    const startValue = marketValue - dayChangeDollar;
     const now = Date.now();
+    const dataPoints = 24;
     const startTime = now - 8 * 60 * 60 * 1000; // Last 8 hours
 
     return Array.from({ length: dataPoints }, (_, i) => {
@@ -27,7 +27,7 @@ export function PerformanceChart({ portfolio }: { portfolio: Portfolio }) {
       const timestamp = startTime + timeFraction * (now - startTime);
       
       // Interpolated baseline
-      const linearValue = startValue + (totalValue - startValue) * timeFraction;
+      const linearValue = startValue + (marketValue - startValue) * timeFraction;
       
       // Sharp movements and volatility
       // We use multiple sine waves and random jumps for a realistic feel
@@ -35,9 +35,9 @@ export function PerformanceChart({ portfolio }: { portfolio: Portfolio }) {
         Math.sin(timeFraction * 12) * 0.008 + 
         Math.sin(timeFraction * 25) * 0.004 + 
         (Math.random() - 0.5) * 0.015
-      ) * totalValue;
+      ) * (marketValue || 1000); // Use a baseline if marketValue is 0
       
-      // Ensure it starts exactly at startValue and ends exactly at totalValue
+      // Ensure it starts exactly at startValue and ends exactly at marketValue
       const envelope = Math.sin(timeFraction * Math.PI);
       const value = linearValue + (noise * envelope);
 
@@ -53,7 +53,8 @@ export function PerformanceChart({ portfolio }: { portfolio: Portfolio }) {
   const values = chartData.map((p) => p.value);
   const dataMin = Math.min(...values);
   const dataMax = Math.max(...values);
-  const buffer = (dataMax - dataMin) * 0.2 || totalValue * 0.01;
+  const marketValue = totalValue - (portfolio.cashBalance ?? 0);
+  const buffer = (dataMax - dataMin) * 0.2 || marketValue * 0.01;
 
   const isPositive = dayChangeDollar >= 0;
   const themeColor = isPositive ? "#10b981" : "#ef4444";
@@ -62,10 +63,10 @@ export function PerformanceChart({ portfolio }: { portfolio: Portfolio }) {
     <div className="h-80 w-full rounded-3xl bg-white p-6 shadow-sm border border-gray-100 flex flex-col">
       <div className="mb-6 flex items-start justify-between">
         <div>
-          <p className="text-xs font-bold uppercase tracking-widest text-gray-400 mb-1">Portfolio Balance</p>
+          <p className="text-xs font-bold uppercase tracking-widest text-gray-400 mb-1">Market Value</p>
           <div className="flex items-baseline gap-3">
             <h2 className="text-3xl font-black text-gray-900">
-              ${totalValue.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+              ${marketValue.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
             </h2>
             <div className={`flex items-center gap-1 text-sm font-bold ${isPositive ? "text-emerald-500" : "text-red-500"}`}>
               <span>{isPositive ? "▲" : "▼"}</span>
@@ -111,7 +112,7 @@ export function PerformanceChart({ portfolio }: { portfolio: Portfolio }) {
               }}
               itemStyle={{ fontSize: "14px", fontWeight: "bold", color: "#1e293b" }}
               labelStyle={{ fontSize: "11px", color: "#64748b", marginBottom: "4px", textTransform: "uppercase", letterSpacing: "0.05em" }}
-              formatter={(value: number) => [`$${value.toLocaleString(undefined, { minimumFractionDigits: 2 })}`, "Balance"]}
+              formatter={(value: number) => [`$${value.toLocaleString(undefined, { minimumFractionDigits: 2 })}`, "Market Value"]}
               cursor={{ stroke: "#e2e8f0", strokeWidth: 2 }}
             />
             <Line
