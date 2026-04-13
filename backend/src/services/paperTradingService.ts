@@ -1,8 +1,6 @@
 import type { Portfolio, Transaction } from "@stock/shared";
-import { PrismaClient } from "@prisma/client";
+import { prisma } from "../lib/prisma.js";
 import { computePortfolioDayMetrics } from "./portfolioMetrics.js";
-
-const prisma = new PrismaClient();
 
 type SupportedSymbol = 
   "AAPL" | "MSFT" | "NVDA" | "AMZN" | "GOOGL" | "TSLA" | "META" | "BRK-B" | "UNH" | "V" | 
