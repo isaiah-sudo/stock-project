@@ -1,6 +1,13 @@
 import { useEffect, useState } from "react";
 import type { Portfolio } from "@stock/shared";
-import { LEVELS, getCurrentLevel, getNextLevel, getLevelProgress } from "@stock/shared";
+import {
+  LEVELS,
+  getCurrentLevel,
+  getCurrentLevelIndex,
+  getNextLevel,
+  getLevelProgress,
+  normalizeScore,
+} from "@stock/shared";
 
 export function PortfolioOverview({ portfolio }: { portfolio: Portfolio }) {
   const dayUp = (portfolio.dayChangeDollar ?? 0) >= 0;
@@ -9,11 +16,13 @@ export function PortfolioOverview({ portfolio }: { portfolio: Portfolio }) {
   const xp = portfolio.experiencePoints ?? 0;
   const profit = portfolio.totalValue - 100000;
   const traderScore = Number((profit + (xp * 50)).toFixed(2));
+  const displayScore = normalizeScore(traderScore);
   
   const currentLevel = getCurrentLevel(traderScore);
+  const currentLevelIndex = getCurrentLevelIndex(traderScore);
   const nextLevel = getNextLevel(traderScore);
   const progress = getLevelProgress(traderScore);
-  const levelNumber = LEVELS.indexOf(currentLevel) + 1;
+  const levelNumber = currentLevelIndex + 1;
 
   const [levelUp, setLevelUp] = useState(false);
 
@@ -21,16 +30,14 @@ export function PortfolioOverview({ portfolio }: { portfolio: Portfolio }) {
     const prevScoreStr = localStorage.getItem('prevTraderScore');
     if (prevScoreStr) {
       const prevScore = Number(prevScoreStr);
-      const prevLevel = getCurrentLevel(prevScore);
-      const prevLevelIndex = LEVELS.indexOf(prevLevel);
-      const currentLevelIndex = LEVELS.indexOf(currentLevel);
+      const prevLevelIndex = getCurrentLevelIndex(prevScore);
       if (currentLevelIndex > prevLevelIndex) {
         setLevelUp(true);
         setTimeout(() => setLevelUp(false), 5000); // hide after 5s
       }
     }
     localStorage.setItem('prevTraderScore', traderScore.toString());
-  }, [traderScore, currentLevel]);
+  }, [traderScore, currentLevelIndex]);
 
   const marketValue = portfolio.totalValue - portfolio.cashBalance;
 
@@ -66,7 +73,7 @@ export function PortfolioOverview({ portfolio }: { portfolio: Portfolio }) {
           <span className="text-2xl">{currentLevel.icon}</span>
         </div>
         <div className="mt-4 flex items-center justify-between text-[10px] font-bold text-slate-500 uppercase tracking-tighter">
-          <span>{traderScore.toLocaleString()} Score</span>
+          <span>{displayScore.toLocaleString()} Score</span>
           {nextLevel && <span> / {nextLevel.min.toLocaleString()} Score</span>}
         </div>
         <div className="mt-1 h-2 w-full rounded-full bg-slate-100 overflow-hidden">
