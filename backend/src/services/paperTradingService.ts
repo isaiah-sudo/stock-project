@@ -450,6 +450,10 @@ class PaperTradingService {
       if (marketValue >= 50000) {
         await this.unlockAchievement(userId, "BULL_RUN");
       }
+      const transactionCount = await prisma.paperTransaction.count({ where: { userId } });
+      if (transactionCount >= 100) {
+        await this.unlockAchievement(userId, "CENTURY_TRADER");
+      }
     } catch (e) {
       console.error(`Failed to check achievements for ${userId}:`, e);
     }

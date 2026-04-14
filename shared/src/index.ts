@@ -20,6 +20,8 @@ export interface Portfolio {
   holdings: Holding[];
 }
 
+export * from './levels';
+
 export interface Transaction {
   id: string;
   symbol: string;

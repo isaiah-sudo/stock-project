@@ -1,4 +1,6 @@
+import { useEffect, useState } from "react";
 import type { Portfolio } from "@stock/shared";
+import { LEVELS, getCurrentLevel, getNextLevel, getLevelProgress } from "@stock/shared";
 
 export function PortfolioOverview({ portfolio }: { portfolio: Portfolio }) {
   const dayUp = (portfolio.dayChangeDollar ?? 0) >= 0;
@@ -8,23 +10,27 @@ export function PortfolioOverview({ portfolio }: { portfolio: Portfolio }) {
   const profit = portfolio.totalValue - 100000;
   const traderScore = Number((profit + (xp * 50)).toFixed(2));
   
-  const LEVELS = [
-    { min: -5000, label: "Rookie", icon: "🌱", color: "bg-emerald-100 text-emerald-700" },
-    { min: 5000, label: "Day Trader", icon: "🚀", color: "bg-blue-100 text-blue-700" },
-    { min: 15000, label: "Market Pro", icon: "📈", color: "bg-indigo-100 text-indigo-700" },
-    { min: 50000, label: "Portfolio Whale", icon: "🐋", color: "bg-purple-100 text-purple-700" },
-    { min: 150000, label: "Wall Street Guru", icon: "💎", color: "bg-fuchsia-100 text-fuchsia-700" },
-    { min: 500000, label: "Market Legend", icon: "👑", color: "bg-amber-100 text-amber-700" },
-  ];
+  const currentLevel = getCurrentLevel(traderScore);
+  const nextLevel = getNextLevel(traderScore);
+  const progress = getLevelProgress(traderScore);
+  const levelNumber = LEVELS.indexOf(currentLevel) + 1;
 
-  const currentLevelIndex = [...LEVELS].reverse().findIndex(l => traderScore >= l.min);
-  const levelIdx = currentLevelIndex === -1 ? 0 : (LEVELS.length - 1 - currentLevelIndex);
-  const currentLevel = LEVELS[levelIdx];
-  const nextLevel = LEVELS[levelIdx + 1];
+  const [levelUp, setLevelUp] = useState(false);
 
-  const progress = nextLevel 
-    ? ((traderScore - currentLevel.min) / (nextLevel.min - currentLevel.min)) * 100
-    : 100;
+  useEffect(() => {
+    const prevScoreStr = localStorage.getItem('prevTraderScore');
+    if (prevScoreStr) {
+      const prevScore = Number(prevScoreStr);
+      const prevLevel = getCurrentLevel(prevScore);
+      const prevLevelIndex = LEVELS.indexOf(prevLevel);
+      const currentLevelIndex = LEVELS.indexOf(currentLevel);
+      if (currentLevelIndex > prevLevelIndex) {
+        setLevelUp(true);
+        setTimeout(() => setLevelUp(false), 5000); // hide after 5s
+      }
+    }
+    localStorage.setItem('prevTraderScore', traderScore.toString());
+  }, [traderScore, currentLevel]);
 
   const marketValue = portfolio.totalValue - portfolio.cashBalance;
 
@@ -47,16 +53,21 @@ export function PortfolioOverview({ portfolio }: { portfolio: Portfolio }) {
         icon="📊"
       />
       <div className="group relative overflow-hidden rounded-3xl bg-white p-6 shadow-xl border border-slate-100 transition-all hover:shadow-2xl hover:-translate-y-1">
+        {levelUp && (
+          <div className="mb-4 p-2 bg-green-100 text-green-800 rounded-lg text-sm font-medium animate-pulse">
+            🎉 Congratulations! You leveled up to {currentLevel.label}!
+          </div>
+        )}
         <div className="flex items-center justify-between">
           <div>
-            <p className="text-xs font-bold uppercase tracking-wider text-slate-400">Level {levelIdx + 1}</p>
+            <p className="text-xs font-bold uppercase tracking-wider text-slate-400">Level {levelNumber}</p>
             <h4 className="text-sm font-black text-slate-900 mt-0.5">{currentLevel.label}</h4>
           </div>
           <span className="text-2xl">{currentLevel.icon}</span>
         </div>
         <div className="mt-4 flex items-center justify-between text-[10px] font-bold text-slate-500 uppercase tracking-tighter">
           <span>{traderScore.toLocaleString()} Score</span>
-          {nextLevel && <span>{nextLevel.min.toLocaleString()} Score</span>}
+          {nextLevel && <span> / {nextLevel.min.toLocaleString()} Score</span>}
         </div>
         <div className="mt-1 h-2 w-full rounded-full bg-slate-100 overflow-hidden">
           <div 
