@@ -12,7 +12,11 @@ interface Achievement {
 const ACHIEVEMENT_META: Record<string, { label: string; icon: string; desc: string }> = {
   FIRST_TRADE: { label: "First Trade", icon: "🤝", desc: "Executed your first order" },
   TEN_PCT_GAIN: { label: "Investor", icon: "📈", desc: "Reached 10% portfolio growth" },
-  ALL_STAR: { label: "All Star", icon: "🌟", desc: "Doubled your initial capital" }
+  ALL_STAR: { label: "All Star", icon: "🌟", desc: "Doubled your initial capital" },
+  PROFIT_TAKER: { label: "Profit Taker", icon: "💰", desc: "Sold a stock for a gain" },
+  DIVERSIFIED: { label: "Diversified", icon: "🌍", desc: "Hold 5+ different assets" },
+  WHALE: { label: "Whale", icon: "🐋", desc: "Executed a $10k+ trade" },
+  BULL_RUN: { label: "Bull Run", icon: "🐂", desc: "Reach $50k market value" }
 };
 
 export function TrophyRoom() {

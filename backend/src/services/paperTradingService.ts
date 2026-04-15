@@ -1,13 +1,13 @@
 import type { Portfolio, Transaction } from "@stock/shared";
-import { PrismaClient } from "@prisma/client";
+import { prisma } from "../lib/prisma.js";
 import { computePortfolioDayMetrics } from "./portfolioMetrics.js";
-
-const prisma = new PrismaClient();
 
 type SupportedSymbol = 
   "AAPL" | "MSFT" | "NVDA" | "AMZN" | "GOOGL" | "TSLA" | "META" | "BRK-B" | "UNH" | "V" | 
   "JPM" | "LLY" | "AVGO" | "XOM" | "MA" | "JNJ" | "PG" | "COST" | "HD" | "ADBE" | 
-  "NFLX" | "AMD" | "DIS" | "CRM" | "INTC" | "PYPL" | "VOO" | "QQQ" | "SPY" | "BABA";
+  "NFLX" | "AMD" | "DIS" | "CRM" | "INTC" | "PYPL" | "VOO" | "QQQ" | "SPY" | "BABA" |
+  "PLTR" | "SOFI" | "U" | "SNOW" | "CRWD" | "NKE" | "SBUX" | "TGT" | "WMT" | "CVX" |
+  "CAT" | "DE" | "GS" | "MS" | "SQ" | "COIN" | "SCHD" | "VTI" | "VT" | "GME" | "AMC" | "MSTR";
 
 interface Position {
   symbol: SupportedSymbol;
@@ -60,7 +60,29 @@ const SYMBOL_META: Record<SupportedSymbol, { name: string; basePrice: number }> 
   VOO: { name: "Vanguard S&P 500 ETF", basePrice: 470 },
   QQQ: { name: "Invesco QQQ Trust", basePrice: 440 },
   SPY: { name: "SPDR S&P 500 ETF Trust", basePrice: 515 },
-  BABA: { name: "Alibaba Group Holding Ltd.", basePrice: 75 }
+  BABA: { name: "Alibaba Group Holding Ltd.", basePrice: 75 },
+  PLTR: { name: "Palantir Technologies Inc.", basePrice: 24 },
+  SOFI: { name: "SoFi Technologies Inc.", basePrice: 8 },
+  U: { name: "Unity Software Inc.", basePrice: 30 },
+  SNOW: { name: "Snowflake Inc.", basePrice: 160 },
+  CRWD: { name: "CrowdStrike Holdings Inc.", basePrice: 320 },
+  NKE: { name: "Nike Inc.", basePrice: 95 },
+  SBUX: { name: "Starbucks Corp.", basePrice: 88 },
+  TGT: { name: "Target Corp.", basePrice: 170 },
+  WMT: { name: "Walmart Inc.", basePrice: 60 },
+  CVX: { name: "Chevron Corp.", basePrice: 155 },
+  CAT: { name: "Caterpillar Inc.", basePrice: 350 },
+  DE: { name: "Deere & Co.", basePrice: 390 },
+  GS: { name: "Goldman Sachs Group Inc.", basePrice: 410 },
+  MS: { name: "Morgan Stanley", basePrice: 90 },
+  SQ: { name: "Block Inc.", basePrice: 75 },
+  COIN: { name: "Coinbase Global Inc.", basePrice: 250 },
+  SCHD: { name: "Schwab US Dividend Equity ETF", basePrice: 78 },
+  VTI: { name: "Vanguard Total Stock Market ETF", basePrice: 260 },
+  VT: { name: "Vanguard Total World Stock ETF", basePrice: 105 },
+  GME: { name: "GameStop Corp.", basePrice: 15 },
+  AMC: { name: "AMC Entertainment Holdings Inc.", basePrice: 4 },
+  MSTR: { name: "MicroStrategy Inc.", basePrice: 1600 }
 };
 
 const SUPPORTED_SYMBOLS = Object.keys(SYMBOL_META) as SupportedSymbol[];
@@ -186,17 +208,19 @@ class PaperTradingService {
     side: "buy" | "sell";
     quantity: number;
   }) {
+    // ✅ FETCH QUOTE OUTSIDE TRANSACTION (external API call)
+    const quote = await this.getQuote(args.symbol);
+    if (!quote) {
+      return { ok: false as const, error: `Unsupported symbol. Use: ${SUPPORTED_SYMBOLS.join(", ")}` };
+    }
+
+    // ✅ FETCH ACCOUNT OUTSIDE TRANSACTION
     const account = await prisma.paperAccount.findUnique({
       where: { userId: args.userId },
       include: { positions: true }
     });
     if (!account?.linked) {
       return { ok: false as const, error: "Paper account is not linked." };
-    }
-
-    const quote = await this.getQuote(args.symbol);
-    if (!quote) {
-      return { ok: false as const, error: `Unsupported symbol. Use: ${SUPPORTED_SYMBOLS.join(", ")}` };
     }
 
     const quantity = Math.floor(args.quantity);
@@ -207,6 +231,12 @@ class PaperTradingService {
     const notional = Number((quote.currentPrice * quantity).toFixed(2));
     const position = account.positions.find(p => p.symbol === quote.symbol);
 
+    // ✅ CHECK WHALE ACHIEVEMENT OUTSIDE TRANSACTION
+    if (notional >= 10000) {
+      await this.unlockAchievement(args.userId, "WHALE");
+    }
+
+    // ✅ ONLY DB WORK INSIDE TRANSACTION
     return await prisma.$transaction(async (tx) => {
       if (args.side === "buy") {
         if (account.cashBalance < notional) {
@@ -260,6 +290,14 @@ class PaperTradingService {
           where: { userId: args.userId },
           data: { cashBalance: { increment: notional } }
         });
+
+        // ✅ SIMPLIFIED: Only award XP for profitable sale, no market value calc
+        if (position && quote.currentPrice > position.averageCost) {
+          await tx.user.update({
+            where: { id: args.userId },
+            data: { experiencePoints: { increment: 20 } }
+          });
+        }
       }
 
       const transaction = await tx.paperTransaction.create({
@@ -287,6 +325,12 @@ class PaperTradingService {
         // Achievement already exists or other error
       }
 
+      // ✅ SIMPLIFIED: Award 10 XP directly without calling awardXP
+      await tx.user.update({
+        where: { id: args.userId },
+        data: { experiencePoints: { increment: 10 } }
+      });
+
       return {
         ok: true as const,
         transaction: {
@@ -302,6 +346,38 @@ class PaperTradingService {
     });
   }
 
+  /**
+   * Internal helper to award XP. Simplified to only update XP without heavy logic.
+   */
+  private async awardXP(tx: any, userId: string, amount: number) {
+    try {
+      await tx.user.update({
+        where: { id: userId },
+        data: { experiencePoints: { increment: amount } }
+      });
+    } catch (e) {
+      console.error(`Failed to award ${amount} XP to user ${userId}:`, e);
+    }
+  }
+
+  /**
+   * Calculate market value using batch quote fetches (Promise.all).
+   */
+  private async calculateMarketValue(positions: any[]): Promise<number> {
+    // ✅ BATCH FETCH: Use Promise.all instead of sequential loop
+    const quotes = await Promise.all(
+      positions.map(pos => this.getQuote(pos.symbol))
+    );
+
+    let value = 0;
+    for (let i = 0; i < positions.length; i++) {
+      const quote = quotes[i];
+      const price = quote?.currentPrice ?? positions[i].averageCost;
+      value += positions[i].quantity * price;
+    }
+    return value;
+  }
+
   async getPortfolio(userId: string): Promise<Portfolio | null> {
     const account = await prisma.paperAccount.findUnique({
       where: { userId },
@@ -309,36 +385,41 @@ class PaperTradingService {
     });
     if (!account?.linked) return null;
 
-    const holdings = await Promise.all(
-      account.positions.map(async (position) => {
-        const quote = await this.getQuote(position.symbol);
-        const currentPrice = quote?.currentPrice ?? position.averageCost;
-        const changePct =
-          quote?.changePct ??
-          Number((((currentPrice - position.averageCost) / position.averageCost) * 100).toFixed(2));
-        return {
-          symbol: position.symbol,
-          name: quote?.name ?? position.name,
-          quantity: position.quantity,
-          averageCost: position.averageCost,
-          currentPrice,
-          changePct
-        };
-      })
+    // ✅ BATCH QUOTE FETCHES
+    const quotes = await Promise.all(
+      account.positions.map(position => this.getQuote(position.symbol))
     );
+
+    const holdings = account.positions.map((position, index) => {
+      const quote = quotes[index];
+      const currentPrice = quote?.currentPrice ?? position.averageCost;
+      const changePct =
+        quote?.changePct ??
+        Number((((currentPrice - position.averageCost) / position.averageCost) * 100).toFixed(2));
+      return {
+        symbol: position.symbol,
+        name: quote?.name ?? position.name,
+        quantity: position.quantity,
+        averageCost: position.averageCost,
+        currentPrice,
+        changePct
+      };
+    });
 
     const { totalValue, dayChangePct, dayChangeDollar } = computePortfolioDayMetrics({
       cashBalance: account.cashBalance,
       holdings
     });
 
-    // Check for performance achievements
-    if (totalValue >= 11000) {
-      await this.unlockAchievement(userId, "TEN_PCT_GAIN");
-    }
-    if (totalValue >= 20000) {
-      await this.unlockAchievement(userId, "ALL_STAR");
-    }
+    // ✅ CHECK ACHIEVEMENTS OUTSIDE main data fetching (fire & forget)
+    setImmediate(() => {
+      this.checkPortfolioAchievements(userId, totalValue, account.positions);
+    });
+
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+      select: { experiencePoints: true }
+    });
 
     return {
       accountId: "paper-account",
@@ -346,8 +427,36 @@ class PaperTradingService {
       totalValue,
       dayChangePct,
       dayChangeDollar,
+      experiencePoints: user?.experiencePoints ?? 0,
       holdings
     };
+  }
+
+  /**
+   * Check and unlock portfolio-based achievements (non-blocking).
+   */
+  private async checkPortfolioAchievements(userId: string, totalValue: number, positions: any[]) {
+    try {
+      if (totalValue >= 11000) {
+        await this.unlockAchievement(userId, "TEN_PCT_GAIN");
+      }
+      if (totalValue >= 20000) {
+        await this.unlockAchievement(userId, "ALL_STAR");
+      }
+      if (positions.length >= 5) {
+        await this.unlockAchievement(userId, "DIVERSIFIED");
+      }
+      const marketValue = await this.calculateMarketValue(positions);
+      if (marketValue >= 50000) {
+        await this.unlockAchievement(userId, "BULL_RUN");
+      }
+      const transactionCount = await prisma.paperTransaction.count({ where: { userId } });
+      if (transactionCount >= 100) {
+        await this.unlockAchievement(userId, "CENTURY_TRADER");
+      }
+    } catch (e) {
+      console.error(`Failed to check achievements for ${userId}:`, e);
+    }
   }
 
   async getTransactions(userId: string): Promise<Transaction[] | null> {
@@ -381,36 +490,65 @@ class PaperTradingService {
       }
     });
 
-    const rankings = await Promise.all(
-      accounts.map(async (account) => {
-        let holdingsValue = 0;
-        for (const pos of account.positions) {
-          const quote = await this.getQuote(pos.symbol);
-          const price = quote?.currentPrice ?? pos.averageCost;
-          holdingsValue += pos.quantity * price;
-        }
-        
-        return {
-          userId: account.userId,
-          email: account.user.email.split("@")[0], // Mask email for privacy
-          totalValue: Number((account.cashBalance + holdingsValue).toFixed(2)),
-          exp: account.user.experiencePoints
-        };
-      })
+    // ✅ BATCH ALL QUOTE FETCHES for all accounts
+    const allPositions = accounts.flatMap(acc => acc.positions);
+    const uniqueSymbols = Array.from(new Set(allPositions.map(p => p.symbol)));
+    const quoteMap = new Map<string, LiveQuote | null>();
+    
+    const quotes = await Promise.all(
+      uniqueSymbols.map(symbol => this.getQuote(symbol))
     );
 
-    return rankings.sort((a, b) => b.totalValue - a.totalValue).slice(0, 20);
+    for (let i = 0; i < uniqueSymbols.length; i++) {
+      quoteMap.set(uniqueSymbols[i], quotes[i]);
+    }
+
+    const rankings = accounts.map((account) => {
+      let holdingsValue = 0;
+      for (const pos of account.positions) {
+        const quote = quoteMap.get(pos.symbol);
+        const price = quote?.currentPrice ?? pos.averageCost;
+        holdingsValue += pos.quantity * price;
+      }
+      
+      return {
+        userId: account.userId,
+        email: account.user.email.split("@")[0], // Mask email for privacy
+        totalValue: Number((account.cashBalance + holdingsValue).toFixed(2)),
+        exp: account.user.experiencePoints,
+        // Blended Score: (Net Worth - Initial Cash) + (XP * 50)
+        score: Number((account.cashBalance + holdingsValue - 100000).toFixed(2)) + (account.user.experiencePoints * 50)
+      };
+    });
+
+    return rankings.sort((a, b) => b.score - a.score).slice(0, 20);
   }
 
-  async unlockAchievement(userId: string, type: string) {
-    try {
-      await prisma.achievement.upsert({
-        where: { userId_type: { userId, type } },
-        update: {},
-        create: { userId, type }
+  async unlockAchievement(userId: string, type: string, txClient?: any) {
+    const execute = async (tx: any) => {
+      const existing = await tx.achievement.findUnique({
+        where: { userId_type: { userId, type } }
       });
-    } catch {
-      // Ignored
+
+      if (!existing) {
+        await tx.achievement.create({
+          data: { userId, type }
+        });
+        // Award 50 XP for unlocking an achievement
+        await this.awardXP(tx, userId, 50);
+      }
+    };
+
+    try {
+      if (txClient) {
+        await execute(txClient);
+      } else {
+        await prisma.$transaction(async (tx) => {
+          await execute(tx);
+        });
+      }
+    } catch (e) {
+      console.error(`Failed to unlock achievement ${type} for user ${userId}:`, e);
     }
   }
 

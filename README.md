@@ -44,10 +44,9 @@ Production-ready starter for a beginner paper trading stock game app:
 ## Live Quote Provider
 - **Primary:** Alpha Vantage (if `ALPHA_VANTAGE_API_KEY` is set in your environment)
 - **Fallback:** yfinance (no API key required)
-- Backend uses `STOCK_QUOTE_SERVICE_URL` (default `http://127.0.0.1:8001`) to fetch quotes.
+- Backend uses `http://127.0.0.1:8001` to fetch quotes.
 - If both providers fail, paper trading falls back to synthetic prices so orders still work.
 
 ## Notes
-- Brokerage integration files are scaffolded with placeholder Webull OAuth methods.
-- Mock data is included for local development when brokerage data is unavailable.
+- Some stocks are included in the paper trade but to add more you need to add them to the `python-quote-service/stocks.txt` file.
 - AI responses include safety guardrails to avoid personalized financial advice.

@@ -1,20 +1,48 @@
+import { useEffect, useState } from "react";
 import type { Portfolio } from "@stock/shared";
+import {
+  LEVELS,
+  getCurrentLevel,
+  getCurrentLevelIndex,
+  getNextLevel,
+  getLevelProgress,
+  normalizeScore,
+} from "@stock/shared";
 
 export function PortfolioOverview({ portfolio }: { portfolio: Portfolio }) {
   const dayUp = (portfolio.dayChangeDollar ?? 0) >= 0;
   
-  // Dynamic Rank Calculation
-  const getRank = (val: number) => {
-    if (val < 11000) return { label: "Rookie", icon: "🌱", color: "bg-emerald-100 text-emerald-700" };
-    if (val < 15000) return { label: "Pro Trader", icon: "🚀", color: "bg-blue-100 text-blue-700" };
-    if (val < 25000) return { label: "Market Whale", icon: "🐋", color: "bg-purple-100 text-purple-700" };
-    return { label: "Legend", icon: "👑", color: "bg-amber-100 text-amber-700" };
-  };
+  // Blended Ranking Logic
+  const xp = portfolio.experiencePoints ?? 0;
+  const profit = portfolio.totalValue - 100000;
+  const traderScore = Number((profit + (xp * 50)).toFixed(2));
+  const displayScore = normalizeScore(traderScore);
+  
+  const currentLevel = getCurrentLevel(traderScore);
+  const currentLevelIndex = getCurrentLevelIndex(traderScore);
+  const nextLevel = getNextLevel(traderScore);
+  const progress = getLevelProgress(traderScore);
+  const levelNumber = currentLevelIndex + 1;
 
-  const rank = getRank(portfolio.totalValue);
+  const [levelUp, setLevelUp] = useState(false);
+
+  useEffect(() => {
+    const prevScoreStr = localStorage.getItem('prevTraderScore');
+    if (prevScoreStr) {
+      const prevScore = Number(prevScoreStr);
+      const prevLevelIndex = getCurrentLevelIndex(prevScore);
+      if (currentLevelIndex > prevLevelIndex) {
+        setLevelUp(true);
+        setTimeout(() => setLevelUp(false), 5000); // hide after 5s
+      }
+    }
+    localStorage.setItem('prevTraderScore', traderScore.toString());
+  }, [traderScore, currentLevelIndex]);
+
+  const marketValue = portfolio.totalValue - portfolio.cashBalance;
 
   return (
-    <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
+    <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-5">
       <StatCard 
         label="Net Worth" 
         value={`$${portfolio.totalValue.toLocaleString(undefined, { minimumFractionDigits: 2 })}`}
@@ -26,19 +54,38 @@ export function PortfolioOverview({ portfolio }: { portfolio: Portfolio }) {
         value={`$${portfolio.cashBalance.toLocaleString(undefined, { minimumFractionDigits: 2 })}`}
         icon="💵"
       />
+      <StatCard 
+        label="Market Value" 
+        value={`$${marketValue.toLocaleString(undefined, { minimumFractionDigits: 2 })}`}
+        icon="📊"
+      />
       <div className="group relative overflow-hidden rounded-3xl bg-white p-6 shadow-xl border border-slate-100 transition-all hover:shadow-2xl hover:-translate-y-1">
+        {levelUp && (
+          <div className="mb-4 p-2 bg-green-100 text-green-800 rounded-lg text-sm font-medium animate-pulse">
+            🎉 Congratulations! You leveled up to {currentLevel.label}!
+          </div>
+        )}
         <div className="flex items-center justify-between">
-          <p className="text-xs font-bold uppercase tracking-wider text-slate-400">Trader Rank</p>
-          <span className="text-2xl">{rank.icon}</span>
+          <div>
+            <p className="text-xs font-bold uppercase tracking-wider text-slate-400">Level {levelNumber}</p>
+            <h4 className="text-sm font-black text-slate-900 mt-0.5">{currentLevel.label}</h4>
+          </div>
+          <span className="text-2xl">{currentLevel.icon}</span>
         </div>
-        <p className={`mt-2 inline-block rounded-xl px-3 py-1 text-sm font-extrabold ${rank.color}`}>
-          {rank.label}
-        </p>
-        <div className="mt-4 h-1.5 w-full rounded-full bg-slate-100 overflow-hidden">
+        <div className="mt-4 flex items-center justify-between text-[10px] font-bold text-slate-500 uppercase tracking-tighter">
+          <span>{displayScore.toLocaleString()} Score</span>
+          {nextLevel && <span> / {nextLevel.min.toLocaleString()} Score</span>}
+        </div>
+        <div className="mt-1 h-2 w-full rounded-full bg-slate-100 overflow-hidden">
           <div 
-            className="h-full bg-blue-500 transition-all duration-1000" 
-            style={{ width: `${Math.min(100, (portfolio.totalValue / 25000) * 100)}%` }}
+            className="h-full bg-gradient-to-r from-blue-500 to-indigo-500 transition-all duration-1000" 
+            style={{ width: `${Math.max(0, Math.min(100, progress))}%` }}
           ></div>
+        </div>
+        <div className="mt-2 flex items-center justify-between">
+            <p className="text-[10px] font-medium text-slate-400">
+                {xp} XP · ${profit.toLocaleString()} Profit
+            </p>
         </div>
       </div>
       <StatCard 

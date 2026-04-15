@@ -2,8 +2,9 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { trackEvent } from "../lib/firebase";
 
-const API_BASE = process.env.NEXT_PUBLIC_API_BASE_URL ?? "http://localhost:4000/api";
+import { apiFetch } from "../lib/api";
 
 export function AuthForm() {
   const router = useRouter();
@@ -20,21 +21,18 @@ export function AuthForm() {
     const endpoint = isLogin ? "/auth/login" : "/auth/signup";
     
     try {
-      const response = await fetch(`${API_BASE}${endpoint}`, {
+      const data = await apiFetch<any>(endpoint, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email, password })
       });
       
-      const data = await response.json();
-      if (!response.ok) {
-        throw new Error(data.error || "Authentication failed");
-      }
-      
+      trackEvent("auth_success", { method: isLogin ? "login" : "signup" });
       localStorage.setItem("token", data.token);
       router.push("/dashboard");
     } catch (err: any) {
+      console.error("Auth error:", err);
       setError(err.message);
+      trackEvent("auth_error_catch", { error: err.message });
     } finally {
       setLoading(false);
     }

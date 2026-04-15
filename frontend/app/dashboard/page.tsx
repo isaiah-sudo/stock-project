@@ -10,6 +10,7 @@ import { PaperTradingPanel } from "../../components/PaperTradingPanel";
 import { PortfolioOverview } from "../../components/PortfolioOverview";
 import { TrophyRoom } from "../../components/TrophyRoom";
 import { Navbar } from "../../components/Navbar";
+import { Leaderboard } from "../../components/Leaderboard";
 
 const PerformanceChart = dynamic(() => import("../../components/PerformanceChart").then((mod) => mod.PerformanceChart), { 
   ssr: false, 
@@ -20,13 +21,15 @@ export default function DashboardPage() {
   const [portfolio, setPortfolio] = useState<Portfolio | null>(null);
   const [error, setError] = useState("");
   const [marketOpen, setMarketOpen] = useState(true);
+  const [activeTab, setActiveTab] = useState<"portfolio" | "chat" | "rankings" | "achievements">("portfolio");
+  const [isTradeModalOpen, setIsTradeModalOpen] = useState(false);
 
   function loadPortfolio() {
     apiFetch<Portfolio>("/paper/portfolio")
       .then(setPortfolio)
       .catch((err) => {
         console.error(err);
-        setError("Could not load portfolio. Please sign in again.");
+        setError(err.message);
       });
   }
 
@@ -53,11 +56,17 @@ export default function DashboardPage() {
         <header className="flex flex-wrap items-center justify-between gap-4 py-4">
           <div className="space-y-1">
             <h1 className="text-3xl font-extrabold tracking-tight text-slate-900 leading-tight">
-              Virtual <span className="text-blue-600">Trading</span> Hub
+              Trillium <span className="text-blue-600">Finance</span>
             </h1>
-            <p className="text-sm font-medium text-slate-500">Welcome to Simulator Pro. Master the markets, risk-free.</p>
+            <p className="text-sm font-medium text-slate-500">Welcome to Trillium Finance. Master the markets, risk-free.</p>
           </div>
           <div className="flex items-center gap-3">
+             <button
+                onClick={() => setIsTradeModalOpen(true)}
+                className="rounded-2xl bg-blue-600 px-5 py-2.5 text-sm font-bold text-white shadow-lg shadow-blue-200 hover:bg-blue-700 transition-all"
+             >
+                + Buy Stocks
+             </button>
              <span className="rounded-2xl bg-white px-5 py-2.5 text-sm font-bold shadow-sm border border-slate-100 flex items-center gap-2">
                 <span className={`h-2 w-2 rounded-full ${marketOpen ? "bg-green-500 animate-pulse" : "bg-red-500"}`}></span>
                 {marketOpen ? "Markets Open" : "Markets Closed"}
@@ -68,24 +77,74 @@ export default function DashboardPage() {
         {error ? <p className="rounded-2xl bg-red-50 p-4 text-sm font-bold text-red-600 border border-red-100">{error}</p> : null}
         
         {portfolio ? (
-          <>
+          <div className="space-y-8">
             <PortfolioOverview portfolio={portfolio} />
             
-            <div className="grid gap-8 lg:grid-cols-[1.5fr,1fr]">
-              <div className="space-y-8">
-                <PerformanceChart portfolio={portfolio} />
-                <PaperTradingPanel onTradeCompleted={loadPortfolio} />
-                <HoldingsTable holdings={portfolio.holdings} />
-              </div>
-              <div className="space-y-8">
-                <TrophyRoom />
-                <ChatAssistant />
-              </div>
+            <div className="flex flex-wrap gap-2 rounded-2xl bg-slate-100/50 p-1.5 border border-slate-200/60 max-w-fit mx-auto">
+              {(["portfolio", "chat", "rankings", "achievements"] as const).map((tab) => (
+                <button
+                  key={tab}
+                  onClick={() => setActiveTab(tab)}
+                  className={`px-6 py-2 rounded-xl text-sm font-bold capitalize transition-all ${
+                    activeTab === tab 
+                      ? "bg-white text-blue-600 shadow-sm border border-slate-100" 
+                      : "text-slate-500 hover:text-slate-700"
+                  }`}
+                >
+                  {tab}
+                </button>
+              ))}
             </div>
-          </>
+
+            <div className="transition-all duration-300">
+              {activeTab === "portfolio" && (
+                <div className="mx-auto max-w-4xl space-y-8">
+                  <PerformanceChart portfolio={portfolio} />
+                  <HoldingsTable holdings={portfolio.holdings} />
+                </div>
+              )}
+
+              {activeTab === "chat" && (
+                <div className="mx-auto max-w-3xl">
+                  <ChatAssistant />
+                </div>
+              )}
+
+              {activeTab === "rankings" && (
+                <div className="mx-auto max-w-4xl">
+                  <Leaderboard />
+                </div>
+              )}
+
+              {activeTab === "achievements" && (
+                <div className="mx-auto max-w-2xl">
+                  <TrophyRoom />
+                </div>
+              )}
+            </div>
+          </div>
         ) : (
           <div className="flex items-center justify-center p-20">
             <div className="h-10 w-10 animate-spin rounded-full border-4 border-blue-600 border-t-transparent shadow-lg shadow-blue-200"></div>
+          </div>
+        )}
+
+        {isTradeModalOpen && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-sm">
+            <div className="w-full max-w-md relative bg-white rounded-3xl shadow-2xl border border-slate-100 overflow-hidden">
+              <button 
+                onClick={() => setIsTradeModalOpen(false)}
+                className="absolute top-4 right-4 h-8 w-8 rounded-full flex items-center justify-center hover:bg-slate-100 text-slate-400 transition-colors z-10"
+              >
+                ✕
+              </button>
+              <PaperTradingPanel 
+                onTradeCompleted={() => {
+                  loadPortfolio();
+                  setIsTradeModalOpen(false);
+                }} 
+              />
+            </div>
           </div>
         )}
       </main>
