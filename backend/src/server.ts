@@ -49,6 +49,11 @@ app.use(
         return callback(null, true);
       }
 
+      // Allow custom domain
+      if (origin === "https://trilliumfinance.net" || origin === "http://trilliumfinance.net") {
+        return callback(null, true);
+      }
+
       // Allow any IP on port 3000 (for LAN access)
       const url = new URL(origin);
       if (url.port === "3000" && /^https?:\/\/\d+\.\d+\.\d+\.\d+:3000$/.test(origin)) {
