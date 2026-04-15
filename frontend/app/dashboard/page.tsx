@@ -78,7 +78,54 @@ export default function DashboardPage() {
         
         {portfolio ? (
           <div className="space-y-8">
+          <div className="bg-slate-100 p-4 rounded-lg shadow-md">
+            <h2 className="text-2xl font-bold text-center">Net Worth</h2>
+            <p className="text-xl font-semibold text-center">$0.00</p>
+            <div className="grid grid-cols-4 gap-4 mt-4">
+              <div className="bg-white p-4 rounded-lg shadow-md">
+                <h3 className="text-lg font-semibold">Available Cash</h3>
+                <p className="text-xl font-bold">$0.00</p>
+              </div>
+              <div className="bg-white p-4 rounded-lg shadow-md">
+                <h3 className="text-lg font-semibold">Market Value</h3>
+                <p className="text-xl font-bold">$0.00</p>
+              </div>
+              <div className="bg-white p-4 rounded-lg shadow-md">
+                <h3 className="text-lg font-semibold">Total Performance</h3>
+                <p className="text-xl font-bold">$0.00</p>
+              </div>
+              <div className="bg-white p-4 rounded-lg shadow-md">
+                <h3 className="text-lg font-semibold">Day Performance</h3>
+                <p className="text-xl font-bold">$0.00</p>
+              </div>
+            </div>
+          </div>
+          <div className="mx-auto max-w-4xl space-y-8">
+          <div className="bg-slate-100 p-4 rounded-lg shadow-md">
+            <h2 className="text-2xl font-bold text-center">Net Worth</h2>
+            <p className="text-xl font-semibold text-center">$0.00</p>
+            <div className="grid grid-cols-4 gap-4 mt-4">
+              <div className="bg-white p-4 rounded-lg shadow-md">
+                <h3 className="text-lg font-semibold">Available Cash</h3>
+                <p className="text-xl font-bold">$0.00</p>
+              </div>
+              <div className="bg-white p-4 rounded-lg shadow-md">
+                <h3 className="text-lg font-semibold">Market Value</h3>
+                <p className="text-xl font-bold">$0.00</p>
+              </div>
+              <div className="bg-white p-4 rounded-lg shadow-md">
+                <h3 className="text-lg font-semibold">Total Performance</h3>
+                <p className="text-xl font-bold">$0.00</p>
+              </div>
+              <div className="bg-white p-4 rounded-lg shadow-md">
+                <h3 className="text-lg font-semibold">Day Performance</h3>
+                <p className="text-xl font-bold">$0.00</p>
+              </div>
+            </div>
+          </div>
+          <div className="mx-auto max-w-4xl space-y-8">
             <PortfolioOverview portfolio={portfolio} />
+          <div className="flex flex-wrap gap-2 rounded-2xl bg-slate-100/50 p-1.5 border border-slate-200/60 max-w-fit mx-auto">
             
             <div className="flex flex-wrap gap-2 rounded-2xl bg-slate-100/50 p-1.5 border border-slate-200/60 max-w-fit mx-auto">
               {(["portfolio", "chat", "rankings", "achievements"] as const).map((tab) => (
@@ -97,6 +144,18 @@ export default function DashboardPage() {
             </div>
 
             <div className="transition-all duration-300">
+              <div className="flex justify-between items-center">
+                <div className="flex items-center gap-2">
+                  <span className="text-sm font-medium">Settings</span>
+                  <span className="text-sm font-medium">Log Out</span>
+                </div>
+              </div>
+              <div className="flex justify-between items-center">
+                <div className="flex items-center gap-2">
+                  <span className="text-sm font-medium">Settings</span>
+                  <span className="text-sm font-medium">Log Out</span>
+                </div>
+              </div>
               {activeTab === "portfolio" && (
                 <div className="mx-auto max-w-4xl space-y-8">
                   <PerformanceChart portfolio={portfolio} />
@@ -125,6 +184,24 @@ export default function DashboardPage() {
           </div>
         ) : (
           <div className="flex items-center justify-center p-20">
+            <div className="h-10 w-10 animate-spin rounded-full border-4 border-blue-600 border-t-transparent shadow-lg shadow-blue-200"></div>
+          </div>
+        )}
+
+        {isTradeModalOpen && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-sm">
+            <div className="h-10 w-10 animate-spin rounded-full border-4 border-blue-600 border-t-transparent shadow-lg shadow-blue-200"></div>
+          </div>
+        )}
+
+        {isTradeModalOpen && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-sm">
+            <div className="h-10 w-10 animate-spin rounded-full border-4 border-blue-600 border-t-transparent shadow-lg shadow-blue-200"></div>
+          </div>
+        )}
+
+        {isTradeModalOpen && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-sm">
             <div className="h-10 w-10 animate-spin rounded-full border-4 border-blue-600 border-t-transparent shadow-lg shadow-blue-200"></div>
           </div>
         )}
