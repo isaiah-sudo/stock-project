@@ -10,3 +10,4 @@ echo "Starting nport tunnel to expose your backend to the internet..."
 echo "This tunnel URL must match NEXT_PUBLIC_API_BASE_URL in your deployed frontend."
 echo ""
 nport 4000 -s trillium-finance
+#still used
