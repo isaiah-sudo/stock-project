@@ -11,14 +11,14 @@ export function Navbar() {
       <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-4 sm:px-8">
         <Link href="/dashboard" className="flex items-center gap-2 group">
           <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-blue-600 font-bold text-white transition-all transform group-hover:rotate-6">
-            S
+            T
           </div>
           <span className="text-xl font-extrabold tracking-tight text-slate-900 group-hover:text-blue-600 transition-colors">
-            Simulator <span className="text-blue-600">Pro</span>
+            Trillium <span className="text-blue-600">Finance</span>
           </span>
         </Link>
 
-        <div className="flex items-center gap-6">
+        <div className="flex items-center gap-8">
           <Link 
             href="/dashboard"
             className={`text-sm font-bold transition-all ${
@@ -28,6 +28,14 @@ export function Navbar() {
             Portfolio
           </Link>
           <Link 
+            href="/chat"
+            className={`text-sm font-bold transition-all ${
+              pathname === "/chat" ? "text-blue-600 underline underline-offset-8" : "text-slate-500 hover:text-slate-900"
+            }`}
+          >
+            Chat
+          </Link>
+          <Link 
             href="/leaderboard"
             className={`text-sm font-bold transition-all ${
               pathname === "/leaderboard" ? "text-blue-600 underline underline-offset-8" : "text-slate-500 hover:text-slate-900"
@@ -35,6 +43,20 @@ export function Navbar() {
           >
             Rankings
           </Link>
+          <Link 
+            href="/achievements"
+            className={`text-sm font-bold transition-all ${
+              pathname === "/achievements" ? "text-blue-600 underline underline-offset-8" : "text-slate-500 hover:text-slate-900"
+            }`}
+          >
+            Achievements
+          </Link>
+        </div>
+
+        <div className="flex items-center gap-4">
+          <button className="h-8 w-8 rounded-lg bg-slate-100 flex items-center justify-center text-slate-600 hover:bg-slate-200">
+            ⚙️
+          </button>
           <button 
             onClick={() => {
               localStorage.removeItem("token");
