@@ -7,6 +7,7 @@ import { getMode } from "../../lib/appMode";
 
 export default function ChatPage() {
   const [showTutorial, setShowTutorial] = useState(false);
+  const [activeTutorialTarget, setActiveTutorialTarget] = useState<string | null>(null);
 
   useEffect(() => {
     const dismissed = window.localStorage.getItem("chatTutorialDismissed") === "true";
@@ -17,14 +18,17 @@ export default function ChatPage() {
 
   const chatSteps: TutorialStep[] = [
     {
-      title: "Ask specific questions for better guidance",
+      title: "Write focused prompts",
       description:
-        "Include a ticker, timeframe, or risk goal in each prompt so the assistant can give more actionable responses."
+        "Include a ticker, timeframe, and risk goal so the assistant can return a concrete answer.",
+      targetId: "chat-assistant-panel",
+      helperText: "Example: 'Analyze AAPL for a 2-week swing trade with medium risk.'"
     },
     {
-      title: "Use chat to validate trade ideas",
+      title: "Use chat before you execute",
       description:
-        "Before buying or selling, ask for a quick thesis summary and risk checklist so you can compare alternatives."
+        "Ask for a thesis summary and risks, then return to dashboard to place your trade.",
+      targetId: "chat-return-link"
     }
   ];
 
@@ -43,11 +47,25 @@ export default function ChatPage() {
         </p>
       </header>
 
-      <div className="max-w-4xl mx-auto">
+      <div
+        id="chat-assistant-panel"
+        className={`max-w-4xl mx-auto ${
+          activeTutorialTarget === "chat-assistant-panel"
+            ? "rounded-3xl ring-4 ring-blue-300 ring-offset-2"
+            : ""
+        }`}
+      >
         <ChatAssistant />
       </div>
 
-      <footer className="text-center">
+      <footer
+        id="chat-return-link"
+        className={`text-center ${
+          activeTutorialTarget === "chat-return-link"
+            ? "rounded-3xl ring-4 ring-blue-300 ring-offset-2"
+            : ""
+        }`}
+      >
         <a
           href="/dashboard"
           className="inline-flex items-center gap-2 rounded-2xl border border-slate-200 bg-white px-6 py-3 font-semibold text-slate-700 shadow-sm hover:bg-slate-50 transition-all font-sans"
@@ -59,10 +77,15 @@ export default function ChatPage() {
         <TutorialOverlay
           title="Chat Tutorial"
           steps={chatSteps}
-          onClose={() => setShowTutorial(false)}
+          onStepChange={(step) => setActiveTutorialTarget(step.targetId ?? null)}
+          onClose={() => {
+            setShowTutorial(false);
+            setActiveTutorialTarget(null);
+          }}
           onDismissForever={() => {
             window.localStorage.setItem("chatTutorialDismissed", "true");
             setShowTutorial(false);
+            setActiveTutorialTarget(null);
           }}
         />
       ) : null}

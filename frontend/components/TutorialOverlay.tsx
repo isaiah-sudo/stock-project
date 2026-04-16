@@ -1,10 +1,13 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 
 export type TutorialStep = {
   title: string;
   description: string;
+  targetId?: string;
+  actionLabel?: string;
+  helperText?: string;
 };
 
 type TutorialOverlayProps = {
@@ -12,19 +15,27 @@ type TutorialOverlayProps = {
   steps: TutorialStep[];
   onClose: () => void;
   onDismissForever?: () => void;
+  onStepChange?: (step: TutorialStep, index: number) => void;
+  onStepAction?: (step: TutorialStep, index: number) => void;
 };
 
 export function TutorialOverlay({
   title,
   steps,
   onClose,
-  onDismissForever
+  onDismissForever,
+  onStepChange,
+  onStepAction
 }: TutorialOverlayProps) {
   const [index, setIndex] = useState(0);
   const step = useMemo(() => steps[index], [steps, index]);
 
   const isFirst = index === 0;
   const isLast = index === steps.length - 1;
+
+  useEffect(() => {
+    onStepChange?.(step, index);
+  }, [index, onStepChange, step]);
 
   return (
     <div className="fixed inset-0 z-[60] flex items-center justify-center bg-slate-900/50 p-4 backdrop-blur-sm">
@@ -50,6 +61,11 @@ export function TutorialOverlay({
           </p>
           <h4 className="mt-2 text-lg font-bold text-slate-900">{step.title}</h4>
           <p className="mt-2 text-sm leading-6 text-slate-600">{step.description}</p>
+          {step.helperText ? (
+            <p className="mt-3 rounded-xl border border-blue-100 bg-blue-50 px-3 py-2 text-xs font-semibold text-blue-700">
+              {step.helperText}
+            </p>
+          ) : null}
         </div>
 
         <div className="mt-5 flex items-center justify-between">
@@ -62,6 +78,14 @@ export function TutorialOverlay({
           </button>
 
           <div className="flex items-center gap-2">
+            {step.actionLabel ? (
+              <button
+                onClick={() => onStepAction?.(step, index)}
+                className="rounded-xl border border-blue-200 bg-blue-50 px-4 py-2 text-sm font-semibold text-blue-700"
+              >
+                {step.actionLabel}
+              </button>
+            ) : null}
             {onDismissForever ? (
               <button
                 onClick={onDismissForever}

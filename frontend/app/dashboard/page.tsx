@@ -26,6 +26,7 @@ export default function DashboardPage() {
   const [activeTab, setActiveTab] = useState<"portfolio" | "chat" | "rankings" | "achievements">("portfolio");
   const [isTradeModalOpen, setIsTradeModalOpen] = useState(false);
   const [showTutorial, setShowTutorial] = useState(false);
+  const [activeTutorialTarget, setActiveTutorialTarget] = useState<string | null>(null);
 
   const initialBalance = 10000;
   const marketValue = portfolio ? portfolio.totalValue - portfolio.cashBalance : 0;
@@ -52,6 +53,12 @@ export default function DashboardPage() {
       .catch(() => {});
   }
 
+  function highlightClass(targetId: string) {
+    return activeTutorialTarget === targetId
+      ? "ring-4 ring-blue-300 ring-offset-2 ring-offset-slate-50 transition"
+      : "";
+  }
+
   useEffect(() => {
     setShowTutorial(shouldShowEducationTutorial());
     loadPortfolio();
@@ -63,28 +70,49 @@ export default function DashboardPage() {
     return () => window.clearInterval(interval);
   }, []);
 
+  useEffect(() => {
+    function handleModeChange() {
+      const nextShow = shouldShowEducationTutorial();
+      setShowTutorial(nextShow);
+      if (!nextShow) {
+        setActiveTutorialTarget(null);
+      }
+    }
+
+    window.addEventListener("appModeChanged", handleModeChange);
+    return () => window.removeEventListener("appModeChanged", handleModeChange);
+  }, []);
+
   const dashboardTutorialSteps: TutorialStep[] = [
     {
-      title: "Read your portfolio summary first",
+      title: "Start with your account snapshot",
       description:
-        "Start at the top panel to track total value, available cash, and day performance. This gives you quick context before placing trades."
+        "Read total value, cash, and performance at the top before making any trade decisions.",
+      targetId: "summary-panel",
+      helperText: "Focus on Day Performance to understand how your positions changed today."
     },
     {
-      title: "Use Holdings Breakdown to manage positions",
+      title: "Practice a trade from holdings",
       description:
-        "Scroll to Holdings Breakdown to review each stock and open the trade flow with the Buy Stocks button when markets are open."
+        "Open the Holdings section and click Buy Stocks to run through the trading flow.",
+      targetId: "holdings-panel",
+      actionLabel: "Try it now"
     },
     {
-      title: "Use Chat and Rankings for decision support",
+      title: "Use navigation for learning support",
       description:
-        "Open Chat for learning guidance and strategy ideas, then check Rankings and Achievements to compare progress and goals."
+        "Use Chat for ideas, Rankings for benchmarking, and Achievements for milestone goals.",
+      targetId: "dashboard-nav",
+      helperText: "Tip: switch to Educational mode in the navbar if you want the tutorial again."
     }
   ];
 
   return (
     <div className="min-h-screen bg-slate-50/50">
       <main className="mx-auto max-w-7xl space-y-8 p-4 sm:p-8">
-        <Navbar />
+        <div id="dashboard-nav" className={highlightClass("dashboard-nav")}>
+          <Navbar />
+        </div>
         {error ? (
           <div className="rounded-3xl bg-red-50 p-4 text-sm font-semibold text-red-700 border border-red-100">
             {error}
@@ -93,7 +121,10 @@ export default function DashboardPage() {
 
         {portfolio ? (
           <>
-            <section className="rounded-[2rem] bg-white p-6 shadow-sm border border-slate-200">
+            <section
+              id="summary-panel"
+              className={`rounded-[2rem] bg-white p-6 shadow-sm border border-slate-200 ${highlightClass("summary-panel")}`}
+            >
               <div className="flex items-center justify-between mb-6">
                 <div className="text-3xl font-black text-slate-900">{formatCurrency(portfolio.totalValue)}</div>
                 <div className="text-sm font-semibold text-emerald-500">Financial Summary</div>
@@ -128,11 +159,17 @@ export default function DashboardPage() {
               </div>
             </section>
 
-            <section className="rounded-[2rem] bg-white p-6 shadow-sm border border-slate-200">
+            <section
+              id="chart-panel"
+              className="rounded-[2rem] bg-white p-6 shadow-sm border border-slate-200"
+            >
               <PerformanceChart portfolio={portfolio} />
             </section>
 
-            <section className="rounded-[2rem] bg-white p-6 shadow-sm border border-slate-200">
+            <section
+              id="holdings-panel"
+              className={`rounded-[2rem] bg-white p-6 shadow-sm border border-slate-200 ${highlightClass("holdings-panel")}`}
+            >
               <div className="flex items-center justify-between mb-6">
                 <h2 className="text-2xl font-bold">Holdings Breakdown</h2>
                 <div className="flex items-center gap-3">
@@ -179,10 +216,20 @@ export default function DashboardPage() {
           <TutorialOverlay
             title="Dashboard Tutorial"
             steps={dashboardTutorialSteps}
-            onClose={() => setShowTutorial(false)}
+            onStepChange={(step) => setActiveTutorialTarget(step.targetId ?? null)}
+            onStepAction={(step) => {
+              if (step.targetId === "holdings-panel") {
+                setIsTradeModalOpen(true);
+              }
+            }}
+            onClose={() => {
+              setShowTutorial(false);
+              setActiveTutorialTarget(null);
+            }}
             onDismissForever={() => {
               dismissEducationTutorial();
               setShowTutorial(false);
+              setActiveTutorialTarget(null);
             }}
           />
         ) : null}

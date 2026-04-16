@@ -7,6 +7,7 @@ import { getMode } from "../../lib/appMode";
 
 export default function LeaderboardPage() {
   const [showTutorial, setShowTutorial] = useState(false);
+  const [activeTutorialTarget, setActiveTutorialTarget] = useState<string | null>(null);
 
   useEffect(() => {
     const dismissed = window.localStorage.getItem("leaderboardTutorialDismissed") === "true";
@@ -17,14 +18,17 @@ export default function LeaderboardPage() {
 
   const leaderboardSteps: TutorialStep[] = [
     {
-      title: "Use rankings to benchmark your strategy",
+      title: "Benchmark your performance",
       description:
-        "Compare your portfolio growth against top users to understand if your returns come from consistency or short-term swings."
+        "Compare your portfolio with top users to spot whether your strategy is consistent.",
+      targetId: "leaderboard-table"
     },
     {
-      title: "Pair rankings with achievements",
+      title: "Turn ranking feedback into actions",
       description:
-        "If your rank stalls, return to portfolio and target achievements that encourage better risk management."
+        "If rank slows down, return to dashboard and adjust risk or position size.",
+      targetId: "leaderboard-return-link",
+      helperText: "Use this loop often: check rank -> adjust strategy -> re-check rank."
     }
   ];
 
@@ -43,9 +47,25 @@ export default function LeaderboardPage() {
         </p>
       </header>
 
-      <Leaderboard />
+      <div
+        id="leaderboard-table"
+        className={`${
+          activeTutorialTarget === "leaderboard-table"
+            ? "rounded-3xl ring-4 ring-blue-300 ring-offset-2"
+            : ""
+        }`}
+      >
+        <Leaderboard />
+      </div>
 
-      <footer className="text-center">
+      <footer
+        id="leaderboard-return-link"
+        className={`text-center ${
+          activeTutorialTarget === "leaderboard-return-link"
+            ? "rounded-3xl ring-4 ring-blue-300 ring-offset-2"
+            : ""
+        }`}
+      >
         <a 
           href="/dashboard"
           className="inline-flex items-center gap-2 rounded-2xl border border-slate-200 bg-white px-6 py-3 font-semibold text-slate-700 shadow-sm hover:bg-slate-50 transition-all font-sans"
@@ -57,10 +77,15 @@ export default function LeaderboardPage() {
         <TutorialOverlay
           title="Leaderboard Tutorial"
           steps={leaderboardSteps}
-          onClose={() => setShowTutorial(false)}
+          onStepChange={(step) => setActiveTutorialTarget(step.targetId ?? null)}
+          onClose={() => {
+            setShowTutorial(false);
+            setActiveTutorialTarget(null);
+          }}
           onDismissForever={() => {
             window.localStorage.setItem("leaderboardTutorialDismissed", "true");
             setShowTutorial(false);
+            setActiveTutorialTarget(null);
           }}
         />
       ) : null}

@@ -4,6 +4,7 @@ export type AppMode = "educational" | "personal";
 
 const APP_MODE_KEY = "appMode";
 const EDUCATION_DISMISSED_KEY = "educationTutorialDismissed";
+const APP_MODE_CHANGED_EVENT = "appModeChanged";
 
 export function getMode(): AppMode | null {
   if (typeof window === "undefined") return null;
@@ -17,6 +18,7 @@ export function getMode(): AppMode | null {
 export function setMode(mode: AppMode) {
   if (typeof window === "undefined") return;
   window.localStorage.setItem(APP_MODE_KEY, mode);
+  window.dispatchEvent(new CustomEvent(APP_MODE_CHANGED_EVENT, { detail: { mode } }));
 }
 
 export function getDefaultRouteForMode(_mode: AppMode) {
