@@ -25,16 +25,16 @@ export default function ChatPage() {
 
   const chatSteps: TutorialStep[] = [
     {
-      title: "Write focused prompts",
+      title: "Your Personal Mentor",
       description:
-        "Include a ticker, timeframe, and risk goal so the assistant can return a concrete answer.",
+        "Think of this AI as your 24/7 financial tutor. You can ask it to explain complex charts or suggest a thesis for any stock ticker.",
       targetId: "chat-assistant-panel",
-      helperText: "Example: 'Analyze AAPL for a 2-week swing trade with medium risk.'"
+      helperText: "Try: 'Explain the risks of investing in semiconductor stocks right now.'"
     },
     {
-      title: "Use chat before you execute",
+      title: "Bridging Analysis and Action",
       description:
-        "Ask for a thesis summary and risks, then return to dashboard to place your trade.",
+        "Once you've built a thesis here, head back to your dashboard to execute. Never trade without a plan!",
       targetId: "chat-return-link"
     }
   ];

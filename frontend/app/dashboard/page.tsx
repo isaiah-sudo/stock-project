@@ -11,7 +11,8 @@ import { PaperTradingPanel } from "../../components/PaperTradingPanel";
 import { Navbar } from "../../components/Navbar";
 import { Leaderboard } from "../../components/Leaderboard";
 import { TutorialOverlay, type TutorialStep } from "../../components/TutorialOverlay";
-import { dismissEducationTutorial, shouldShowEducationTutorial } from "../../lib/appMode";
+import { dismissEducationTutorial, getMode, shouldShowEducationTutorial } from "../../lib/appMode";
+import { LearnMore } from "../../components/LearnMore";
 
 const PerformanceChart = dynamic(() => import("../../components/PerformanceChart").then((mod) => mod.PerformanceChart), { 
   ssr: false, 
@@ -26,6 +27,7 @@ export default function DashboardPage() {
   const [isTradeModalOpen, setIsTradeModalOpen] = useState(false);
   const [showTutorial, setShowTutorial] = useState(false);
   const [activeTutorialTarget, setActiveTutorialTarget] = useState<string | null>(null);
+  const [isEducational, setIsEducational] = useState(false);
 
   const initialBalance = 10000;
   const marketValue = portfolio ? portfolio.totalValue - portfolio.cashBalance : 0;
@@ -60,6 +62,7 @@ export default function DashboardPage() {
 
   useEffect(() => {
     setShowTutorial(shouldShowEducationTutorial());
+    setIsEducational(getMode() === "educational");
     loadPortfolio();
     loadMarketStatus();
     const interval = window.setInterval(() => {
@@ -73,6 +76,7 @@ export default function DashboardPage() {
     function handleModeChange() {
       const nextShow = shouldShowEducationTutorial();
       setShowTutorial(nextShow);
+      setIsEducational(getMode() === "educational");
       if (!nextShow) {
         setActiveTutorialTarget(null);
       }
@@ -84,25 +88,30 @@ export default function DashboardPage() {
 
   const dashboardTutorialSteps: TutorialStep[] = [
     {
-      title: "Start with your account snapshot",
+      title: "Welcome to your Financial Hub",
       description:
-        "Read total value, cash, and performance at the top before making any trade decisions.",
+        "This is where you track your wealth. We've simplified the layout to help you focus on what matters: Growth and Cash Flow.",
       targetId: "summary-panel",
-      helperText: "Focus on Day Performance to understand how your positions changed today."
     },
     {
-      title: "Practice a trade from holdings",
+      title: "Net Worth vs Cash",
       description:
-        "Open the Holdings section and click Buy Stocks to run through the trading flow.",
+        "Your Net Worth is everything you own. Available Cash is what you can use to buy new stocks RIGHT NOW.",
+      targetId: "summary-panel",
+      helperText: "Tip: Look for the (?) icons to learn about any term!"
+    },
+    {
+       title: "Analyze before you act",
+       description: "Instead of guessing, use our AI Assistant to research stocks. Ask for risks and potential upside.",
+       targetId: "dashboard-nav",
+       helperText: "Click the Chat icon in the Navbar to open the advisor."
+    },
+    {
+      title: "Your First Trade",
+      description:
+        "Ready to practice? Click 'Buy Stocks' to open the trading panel. You're using 'Paper Money' - so it's safe to experiment!",
       targetId: "holdings-panel",
-      actionLabel: "Try it now"
-    },
-    {
-      title: "Use navigation for learning support",
-      description:
-        "Use Chat for ideas, Rankings for benchmarking, and Achievements for milestone goals.",
-      targetId: "dashboard-nav",
-      helperText: "Tip: switch to Educational mode in the navbar if you want the tutorial again."
+      actionLabel: "Open Trading Panel"
     }
   ];
 
@@ -126,21 +135,33 @@ export default function DashboardPage() {
                 <div className="mb-6">
                   <div className="text-base font-semibold text-emerald-500 mb-3">Financial Summary</div>
                   <div>
-                    <p className="text-sm font-semibold text-slate-500 mb-1">Net Worth</p>
+                    <p className="text-sm font-semibold text-slate-500 mb-1">
+                      Net Worth
+                      {isEducational && <LearnMore title="Net Worth" content="The total value of all your cash and stock investments combined. This is your total wealth in the simulator." />}
+                    </p>
                     <div className="text-3xl font-black text-slate-900">{formatCurrency(portfolio.totalValue)}</div>
                   </div>
                 </div>
                 <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-4">
                   <div>
-                    <p className="text-sm font-semibold text-slate-500">Available Cash</p>
+                    <p className="text-sm font-semibold text-slate-500">
+                      Available Cash
+                      {isEducational && <LearnMore title="Available Cash" content="The money you have 'on hand' to buy new stocks. It doesn't include the value of stocks you already own." />}
+                    </p>
                     <p className="text-2xl font-bold text-slate-900">{formatCurrency(portfolio.cashBalance)}</p>
                   </div>
                   <div>
-                    <p className="text-sm font-semibold text-slate-500">Market Value</p>
+                    <p className="text-sm font-semibold text-slate-500">
+                      Market Value
+                      {isEducational && <LearnMore title="Market Value" content="The current total worth of all the stocks you own if you were to sell them right now." />}
+                    </p>
                     <p className="text-2xl font-bold text-slate-900">{formatCurrency(marketValue)}</p>
                   </div>
                   <div>
-                    <p className="text-sm font-semibold text-slate-500">Total Performance</p>
+                    <p className="text-sm font-semibold text-slate-500">
+                      Total Performance
+                      {isEducational && <LearnMore title="Total Performance" content="How much your account has grown (or shrunk) since you started with your initial $10,000 balance." />}
+                    </p>
                     <p className={`text-2xl font-bold ${totalPerformanceDollar >= 0 ? "text-emerald-600" : "text-rose-600"}`}>
                       {totalPerformanceDollar >= 0 ? "+" : ""}{formatCurrency(totalPerformanceDollar)}
                     </p>
@@ -149,7 +170,10 @@ export default function DashboardPage() {
                     </p>
                   </div>
                   <div>
-                    <p className="text-sm font-semibold text-slate-500">Day Performance</p>
+                    <p className="text-sm font-semibold text-slate-500">
+                      Day Performance
+                      {isEducational && <LearnMore title="Day Performance" content="How much your portfolio value changed specifically since the market opened today." />}
+                    </p>
                     <p className={`text-2xl font-bold ${dayPerformanceDollar >= 0 ? "text-emerald-600" : "text-rose-600"}`}>
                       {dayPerformanceDollar >= 0 ? "+" : ""}{formatCurrency(dayPerformanceDollar)}
                     </p>

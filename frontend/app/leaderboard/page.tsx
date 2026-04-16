@@ -20,17 +20,17 @@ export default function LeaderboardPage() {
 
   const leaderboardSteps: TutorialStep[] = [
     {
-      title: "Benchmark your performance",
+      title: "Learning from the Pros",
       description:
-        "Compare your portfolio with top users to spot whether your strategy is consistent.",
+        "The leaderboard isn't just for ranking; it's a library of successful strategies. Look at what top traders are holding.",
       targetId: "leaderboard-table"
     },
     {
-      title: "Turn ranking feedback into actions",
+      title: "The Growth Mindset",
       description:
-        "If rank slows down, return to dashboard and adjust risk or position size.",
+        "If your rank drops, don't worry! It's a signal to review your recent trades in the dashboard and ask the AI for a portfolio health check.",
       targetId: "leaderboard-return-link",
-      helperText: "Use this loop often: check rank -> adjust strategy -> re-check rank."
+      helperText: "Educational Tip: Consistent slow growth often beats risky spikes in the long run."
     }
   ];
 

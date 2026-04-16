@@ -2,6 +2,7 @@ import "./globals.css";
 import type { ReactNode } from "react";
 import type { Metadata } from "next";
 import Script from "next/script";
+import { EducationSidebar } from "../components/EducationSidebar";
 
 export const metadata: Metadata = {
   other: {
@@ -20,7 +21,10 @@ export default function RootLayout({ children }: { children: ReactNode }) {
           strategy="afterInteractive"
         />
       </head>
-      <body>{children}</body>
+      <body>
+        {children}
+        <EducationSidebar />
+      </body>
     </html>
   );
 }
