@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { getDefaultRouteForMode, getMode } from "../lib/appMode";
 
 const API_BASE = process.env.NEXT_PUBLIC_API_BASE_URL ?? "http://localhost:4000/api";
 
@@ -25,7 +26,8 @@ export function LoginForm() {
       if (!response.ok) throw new Error("Invalid credentials");
       const data = (await response.json()) as { token: string };
       localStorage.setItem("token", data.token);
-      router.push("/dashboard");
+      const mode = getMode() ?? "personal";
+      router.push(getDefaultRouteForMode(mode));
     } catch {
       setError("Login failed. Use demo@example.com / password123.");
     } finally {
@@ -47,7 +49,8 @@ export function LoginForm() {
       if (!response.ok) throw new Error("Invalid credentials");
       const data = (await response.json()) as { token: string };
       localStorage.setItem("token", data.token);
-      router.push("/dashboard");
+      const mode = getMode() ?? "personal";
+      router.push(getDefaultRouteForMode(mode));
     } catch {
       setError("Demo login failed. Check that the backend server is running and accessible.");
     } finally {
