@@ -82,8 +82,9 @@ export function PerformanceChart({ portfolio }: { portfolio: Portfolio }) {
           <LineChart data={chartData} margin={{ top: 18, right: 16, left: -10, bottom: 12 }}>
             <defs>
               <linearGradient id="colorValue" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="5%" stopColor={themeColor} stopOpacity={0.1}/>
-                <stop offset="95%" stopColor={themeColor} stopOpacity={0}/>
+                <stop offset="0%" stopColor={themeColor} stopOpacity={0.25}/>
+                <stop offset="40%" stopColor={themeColor} stopOpacity={0.12}/>
+                <stop offset="100%" stopColor={themeColor} stopOpacity={0.02}/>
               </linearGradient>
             </defs>
             <CartesianGrid strokeDasharray="4 4" vertical={false} stroke="#f1f5f9" />
@@ -121,6 +122,7 @@ export function PerformanceChart({ portfolio }: { portfolio: Portfolio }) {
               stroke={themeColor}
               strokeWidth={4}
               dot={false}
+              fill="url(#colorValue)"
               activeDot={{ r: 6, strokeWidth: 0, fill: themeColor }}
               animationDuration={1500}
             />

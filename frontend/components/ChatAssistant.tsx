@@ -48,8 +48,8 @@ export function ChatAssistant() {
   }
 
   return (
-    <div className="rounded-2xl bg-white p-4 shadow">
-      <div className="mb-3 flex items-center justify-between">
+    <div className="rounded-2xl bg-white p-4 shadow flex flex-col h-full">
+      <div className="mb-3 flex items-center justify-between flex-shrink-0">
         <h3 className="text-lg font-semibold">AI Chat Assistant</h3>
         <input
           value={model}
@@ -58,7 +58,7 @@ export function ChatAssistant() {
           aria-label="Ollama model"
         />
       </div>
-      <div className="mb-3 h-64 space-y-2 overflow-y-auto rounded-lg bg-slate-50 p-2">
+      <div className="flex-1 min-h-0 mb-3 space-y-2 overflow-y-auto rounded-lg bg-slate-50 p-2">
         {messages.map((m, idx) => (
           <div key={idx} className={m.role === "user" ? "text-right" : "text-left"}>
             <span
@@ -73,7 +73,7 @@ export function ChatAssistant() {
           </div>
         ))}
       </div>
-      <div className="flex gap-2">
+      <div className="flex gap-2 flex-shrink-0">
         <input
           value={input}
           onChange={(e) => setInput(e.target.value)}

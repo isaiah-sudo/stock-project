@@ -42,8 +42,6 @@ export function Navbar({ onChatClick }: NavbarProps) {
       <div className="flex items-center justify-between">
         <a
           href="https://trilliumfinance.net"
-          target="_blank"
-          rel="noreferrer noopener"
           className="flex items-center gap-2 group"
         >
           <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-blue-600 font-bold text-white transition-all transform group-hover:rotate-6">
