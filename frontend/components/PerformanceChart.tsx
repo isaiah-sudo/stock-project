@@ -50,33 +50,37 @@ export function PerformanceChart({ portfolio }: { portfolio: Portfolio }) {
       };
     });
 
-    return data.map((point, index) => {
-      const prevValue = index > 0 ? data[index - 1].value : undefined;
-      const nextValue = index < data.length - 1 ? data[index + 1].value : undefined;
-      const direction = index === 0
-        ? nextValue !== undefined && nextValue < point.value
-          ? "negative"
-          : "positive"
-        : point.value < (prevValue ?? point.value)
-          ? "negative"
-          : "positive";
+    const negativeRuns: Array<typeof data> = [];
+    let currentRun: typeof data = [];
 
-      return {
-        ...point,
-        positiveValue: direction === "positive" ? point.value : null,
-        negativeValue: direction === "negative" ? point.value : null,
-      };
-    });
+    for (let i = 1; i < data.length; i += 1) {
+      if (data[i].value < data[i - 1].value) {
+        if (currentRun.length === 0) {
+          currentRun.push(data[i - 1]);
+        }
+        currentRun.push(data[i]);
+      } else if (currentRun.length > 0) {
+        negativeRuns.push(currentRun);
+        currentRun = [];
+      }
+    }
+
+    if (currentRun.length > 0) {
+      negativeRuns.push(currentRun);
+    }
+
+    return { data, negativeRuns };
   }, [totalValue, dayChangeDollar]);
 
-  const values = chartData.map((p) => p.value);
+  const values = chartData.data.map((p) => p.value);
   const dataMin = Math.min(...values);
   const dataMax = Math.max(...values);
   const marketValue = totalValue - (portfolio.cashBalance ?? 0);
   const buffer = (dataMax - dataMin) * 0.28 || marketValue * 0.02;
 
   const isPositive = dayChangeDollar >= 0;
-  const themeColor = isPositive ? "#10b981" : "#ef4444";
+  const lineColor = "#10b981";
+  const themeColor = lineColor;
 
   return (
     <div className="h-96 w-full rounded-3xl bg-white p-6 shadow-sm border border-gray-100 flex flex-col">
@@ -98,7 +102,7 @@ export function PerformanceChart({ portfolio }: { portfolio: Portfolio }) {
 
       <div className="flex-1 w-full min-h-0">
         <ResponsiveContainer width="100%" height="100%">
-          <LineChart data={chartData} margin={{ top: 18, right: 16, left: -10, bottom: 12 }}>
+          <LineChart data={chartData.data} margin={{ top: 18, right: 16, left: -10, bottom: 12 }}>
             <defs>
               <linearGradient id="colorValue" x1="0" y1="0" x2="0" y2="1">
                 <stop offset="0%" stopColor={themeColor} stopOpacity={0.25}/>
@@ -145,22 +149,26 @@ export function PerformanceChart({ portfolio }: { portfolio: Portfolio }) {
             />
             <Line
               type="monotone"
-              dataKey="positiveValue"
-              stroke="#10b981"
+              dataKey="value"
+              stroke={lineColor}
               strokeWidth={4}
               dot={false}
-              activeDot={{ r: 6, strokeWidth: 0, fill: "#10b981" }}
+              activeDot={{ r: 6, strokeWidth: 0, fill: lineColor }}
               animationDuration={1500}
             />
-            <Line
-              type="monotone"
-              dataKey="negativeValue"
-              stroke="#ef4444"
-              strokeWidth={4}
-              dot={false}
-              activeDot={{ r: 6, strokeWidth: 0, fill: "#ef4444" }}
-              animationDuration={1500}
-            />
+            {chartData.negativeRuns.map((run, index) => (
+              <Line
+                key={index}
+                type="monotone"
+                data={run}
+                dataKey="value"
+                stroke="#ef4444"
+                strokeWidth={4}
+                dot={false}
+                activeDot={{ r: 6, strokeWidth: 0, fill: "#ef4444" }}
+                animationDuration={1500}
+              />
+            ))}
           </LineChart>
         </ResponsiveContainer>
       </div>
