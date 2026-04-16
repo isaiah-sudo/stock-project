@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { trackEvent } from "../lib/firebase";
 
 import { apiFetch } from "../lib/api";
+import { getDefaultRouteForMode, getMode } from "../lib/appMode";
 
 export function AuthForm() {
   const router = useRouter();
@@ -28,7 +29,8 @@ export function AuthForm() {
       
       trackEvent("auth_success", { method: isLogin ? "login" : "signup" });
       localStorage.setItem("token", data.token);
-      router.push("/dashboard");
+      const mode = getMode() ?? "personal";
+      router.push(getDefaultRouteForMode(mode));
     } catch (err: any) {
       console.error("Auth error:", err);
       setError(err.message);

@@ -10,6 +10,9 @@ import { HoldingsTable } from "../../components/HoldingsTable";
 import { PaperTradingPanel } from "../../components/PaperTradingPanel";
 import { PageHeader } from "../../components/PageHeader";
 import { Navbar } from "../../components/Navbar";
+import { Leaderboard } from "../../components/Leaderboard";
+import { TutorialOverlay, type TutorialStep } from "../../components/TutorialOverlay";
+import { dismissEducationTutorial, shouldShowEducationTutorial } from "../../lib/appMode";
 
 const PerformanceChart = dynamic(() => import("../../components/PerformanceChart").then((mod) => mod.PerformanceChart), { 
   ssr: false, 
@@ -22,6 +25,7 @@ export default function DashboardPage() {
   const [marketOpen, setMarketOpen] = useState(true);
   const [activeTab, setActiveTab] = useState<"portfolio" | "chat" | "rankings" | "achievements">("portfolio");
   const [isTradeModalOpen, setIsTradeModalOpen] = useState(false);
+  const [showTutorial, setShowTutorial] = useState(false);
 
   const initialBalance = 10000;
   const marketValue = portfolio ? portfolio.totalValue - portfolio.cashBalance : 0;
@@ -49,6 +53,7 @@ export default function DashboardPage() {
   }
 
   useEffect(() => {
+    setShowTutorial(shouldShowEducationTutorial());
     loadPortfolio();
     loadMarketStatus();
     const interval = window.setInterval(() => {
@@ -57,6 +62,24 @@ export default function DashboardPage() {
     }, 30_000);
     return () => window.clearInterval(interval);
   }, []);
+
+  const dashboardTutorialSteps: TutorialStep[] = [
+    {
+      title: "Read your portfolio summary first",
+      description:
+        "Start at the top panel to track total value, available cash, and day performance. This gives you quick context before placing trades."
+    },
+    {
+      title: "Use Holdings Breakdown to manage positions",
+      description:
+        "Scroll to Holdings Breakdown to review each stock and open the trade flow with the Buy Stocks button when markets are open."
+    },
+    {
+      title: "Use Chat and Rankings for decision support",
+      description:
+        "Open Chat for learning guidance and strategy ideas, then check Rankings and Achievements to compare progress and goals."
+    }
+  ];
 
   return (
     <div className="min-h-screen bg-slate-50/50">
@@ -216,6 +239,17 @@ export default function DashboardPage() {
             </div>
           </div>
         )}
+        {showTutorial ? (
+          <TutorialOverlay
+            title="Dashboard Tutorial"
+            steps={dashboardTutorialSteps}
+            onClose={() => setShowTutorial(false)}
+            onDismissForever={() => {
+              dismissEducationTutorial();
+              setShowTutorial(false);
+            }}
+          />
+        ) : null}
       </main>
     </div>
   );
