@@ -5,7 +5,11 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { type AppMode, getMode, resetEducationTutorial, setMode } from "../lib/appMode";
 
-export function Navbar() {
+interface NavbarProps {
+  onChatClick?: () => void;
+}
+
+export function Navbar({ onChatClick }: NavbarProps) {
   const pathname = usePathname();
   const [mode, setCurrentMode] = useState<AppMode>("personal");
 
@@ -21,6 +25,15 @@ export function Navbar() {
     setCurrentMode(nextMode);
     if (nextMode === "educational") {
       resetEducationTutorial();
+    }
+  }
+
+  function handleChatClick() {
+    if (pathname === "/dashboard" && onChatClick) {
+      onChatClick();
+    } else {
+      // Navigate to chat page for non-dashboard pages
+      window.location.href = "/chat";
     }
   }
 
@@ -45,14 +58,14 @@ export function Navbar() {
           >
             Portfolio
           </Link>
-          <Link 
-            href="/chat"
+          <button
+            onClick={handleChatClick}
             className={`text-sm font-bold transition-all ${
               pathname === "/chat" ? "text-blue-600 underline underline-offset-8" : "text-slate-500 hover:text-slate-900"
             }`}
           >
             Chat
-          </Link>
+          </button>
           <Link 
             href="/leaderboard"
             className={`text-sm font-bold transition-all ${
