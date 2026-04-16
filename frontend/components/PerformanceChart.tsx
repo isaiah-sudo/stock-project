@@ -3,7 +3,6 @@
 import type { Portfolio } from "@stock/shared";
 import { useMemo } from "react";
 import {
-  Area,
   CartesianGrid,
   Line,
   LineChart,
@@ -23,13 +22,13 @@ export function PerformanceChart({ portfolio }: { portfolio: Portfolio }) {
     const dataPoints = 24;
     const startTime = now - 8 * 60 * 60 * 1000; // Last 8 hours
 
-    const data = Array.from({ length: dataPoints }, (_, i) => {
+    return Array.from({ length: dataPoints }, (_, i) => {
       const timeFraction = i / (dataPoints - 1);
       const timestamp = startTime + timeFraction * (now - startTime);
-      
+
       // Interpolated baseline
       const linearValue = startValue + (marketValue - startValue) * timeFraction;
-      
+
       // Sharp movements and volatility
       // We use multiple sine waves and random jumps for a realistic feel
       const noise = (
@@ -37,8 +36,7 @@ export function PerformanceChart({ portfolio }: { portfolio: Portfolio }) {
         Math.sin(timeFraction * 25) * 0.004 + 
         (Math.random() - 0.5) * 0.015
       ) * (marketValue || 1000); // Use a baseline if marketValue is 0
-      
-      // Ensure it starts exactly at startValue and ends exactly at marketValue
+
       const envelope = Math.sin(timeFraction * Math.PI);
       const value = linearValue + (noise * envelope);
 
@@ -49,30 +47,9 @@ export function PerformanceChart({ portfolio }: { portfolio: Portfolio }) {
         timestamp,
       };
     });
-
-    const negativeRuns: Array<typeof data> = [];
-    let currentRun: typeof data = [];
-
-    for (let i = 1; i < data.length; i += 1) {
-      if (data[i].value < data[i - 1].value) {
-        if (currentRun.length === 0) {
-          currentRun.push(data[i - 1]);
-        }
-        currentRun.push(data[i]);
-      } else if (currentRun.length > 0) {
-        negativeRuns.push(currentRun);
-        currentRun = [];
-      }
-    }
-
-    if (currentRun.length > 0) {
-      negativeRuns.push(currentRun);
-    }
-
-    return { data, negativeRuns };
   }, [totalValue, dayChangeDollar]);
 
-  const values = chartData.data.map((p) => p.value);
+  const values = chartData.map((p) => p.value);
   const dataMin = Math.min(...values);
   const dataMax = Math.max(...values);
   const marketValue = totalValue - (portfolio.cashBalance ?? 0);
@@ -80,7 +57,6 @@ export function PerformanceChart({ portfolio }: { portfolio: Portfolio }) {
 
   const isPositive = dayChangeDollar >= 0;
   const lineColor = "#10b981";
-  const themeColor = lineColor;
 
   return (
     <div className="h-96 w-full rounded-3xl bg-white p-6 shadow-sm border border-gray-100 flex flex-col">
@@ -102,14 +78,7 @@ export function PerformanceChart({ portfolio }: { portfolio: Portfolio }) {
 
       <div className="flex-1 w-full min-h-0">
         <ResponsiveContainer width="100%" height="100%">
-          <LineChart data={chartData.data} margin={{ top: 18, right: 16, left: -10, bottom: 12 }}>
-            <defs>
-              <linearGradient id="colorValue" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="0%" stopColor={themeColor} stopOpacity={0.25}/>
-                <stop offset="40%" stopColor={themeColor} stopOpacity={0.12}/>
-                <stop offset="100%" stopColor={themeColor} stopOpacity={0.02}/>
-              </linearGradient>
-            </defs>
+          <LineChart data={chartData} margin={{ top: 18, right: 16, left: -10, bottom: 12 }}>
             <CartesianGrid strokeDasharray="4 4" vertical={false} stroke="#f1f5f9" />
             <XAxis 
               dataKey="label" 
@@ -139,14 +108,6 @@ export function PerformanceChart({ portfolio }: { portfolio: Portfolio }) {
               formatter={(value: number) => [`$${value.toLocaleString(undefined, { minimumFractionDigits: 2 })}`, "Market Value"]}
               cursor={{ stroke: "#e2e8f0", strokeWidth: 2 }}
             />
-            <Area
-              type="monotone"
-              dataKey="value"
-              stroke="transparent"
-              fill="url(#colorValue)"
-              fillOpacity={1}
-              animationDuration={1500}
-            />
             <Line
               type="monotone"
               dataKey="value"
@@ -156,19 +117,6 @@ export function PerformanceChart({ portfolio }: { portfolio: Portfolio }) {
               activeDot={{ r: 6, strokeWidth: 0, fill: lineColor }}
               animationDuration={1500}
             />
-            {chartData.negativeRuns.map((run, index) => (
-              <Line
-                key={index}
-                type="monotone"
-                data={run}
-                dataKey="value"
-                stroke="#ef4444"
-                strokeWidth={4}
-                dot={false}
-                activeDot={{ r: 6, strokeWidth: 0, fill: "#ef4444" }}
-                animationDuration={1500}
-              />
-            ))}
           </LineChart>
         </ResponsiveContainer>
       </div>
