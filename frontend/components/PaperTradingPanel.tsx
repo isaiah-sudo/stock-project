@@ -15,7 +15,7 @@ interface Quote {
   changePct: number;
 }
 
-export function PaperTradingPanel({ onTradeCompleted }: { onTradeCompleted: () => void }) {
+export function PaperTradingPanel({ onTradeCompleted, buyingPower }: { onTradeCompleted: () => void; buyingPower?: number }) {
   const [metadata, setMetadata] = useState<StockMetadata[]>([]);
   const [search, setSearch] = useState("");
   const [symbol, setSymbol] = useState("AAPL");
@@ -156,16 +156,32 @@ export function PaperTradingPanel({ onTradeCompleted }: { onTradeCompleted: () =
 
         {quote && (
           <div className="rounded-xl bg-slate-50 p-4 border border-slate-100">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-xs font-medium text-slate-500">{quote.name}</p>
-                <p className="text-lg font-black text-slate-900">{quote.symbol}</p>
+            <div className="grid gap-4 lg:grid-cols-[200px_1fr] lg:items-center">
+              <div className="space-y-3 text-slate-500 text-xs">
+                <div>
+                  <p className="font-semibold text-slate-400 uppercase tracking-wide">Estimated Total</p>
+                  <p>${(quote.currentPrice * quantity).toFixed(2)}</p>
+                </div>
+                <div>
+                  <p className="font-semibold text-slate-400 uppercase tracking-wide">Estimated Transaction Fee</p>
+                  <p>$0.00</p>
+                </div>
+                <div>
+                  <p className="font-semibold text-slate-400 uppercase tracking-wide">Cash / Buying Power</p>
+                  <p>${(buyingPower ?? 0).toFixed(2)}</p>
+                </div>
               </div>
-              <div className="text-right">
-                <p className="text-lg font-black text-slate-900">${quote.currentPrice.toFixed(2)}</p>
-                <p className={`text-xs font-bold ${quote.changePct >= 0 ? "text-emerald-500" : "text-red-500"}`}>
-                  {quote.changePct >= 0 ? "+" : ""}{quote.changePct.toFixed(2)}%
-                </p>
+              <div className="rounded-2xl bg-white p-4 border border-slate-200">
+                <div>
+                  <p className="text-xs font-medium text-slate-500">{quote.name}</p>
+                  <p className="text-lg font-black text-slate-900">{quote.symbol}</p>
+                </div>
+                <div className="mt-3 text-right">
+                  <p className="text-lg font-black text-slate-900">${quote.currentPrice.toFixed(2)}</p>
+                  <p className={`text-xs font-bold ${quote.changePct >= 0 ? "text-emerald-500" : "text-red-500"}`}>
+                    {quote.changePct >= 0 ? "+" : ""}{quote.changePct.toFixed(2)}%
+                  </p>
+                </div>
               </div>
             </div>
           </div>
