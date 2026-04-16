@@ -30,6 +30,7 @@ export function TutorialOverlay({
   onStepAction
 }: TutorialOverlayProps) {
   const [index, setIndex] = useState(0);
+  const [tooltipPos, setTooltipPos] = useState<{ top: number; left: number } | null>(null);
   const step = useMemo(() => steps[index], [steps, index]);
 
   const isFirst = index === 0;
@@ -60,8 +61,11 @@ export function TutorialOverlay({
   const progress = ((index + 1) / steps.length) * 100;
 
   return (
-    <div className="fixed inset-0 z-[60] flex items-center justify-center bg-slate-900/50 p-4 backdrop-blur-sm">
-      <div className="w-full max-w-xl rounded-3xl border border-slate-100 bg-white p-6 shadow-2xl">
+    <div className={`fixed inset-0 z-[60] ${!tooltipPos ? "flex items-center justify-center" : ""} bg-slate-900/50 p-4 backdrop-blur-sm`}>
+      <div 
+        className="w-full max-w-xl rounded-3xl border border-slate-100 bg-white p-6 shadow-2xl"
+        style={tooltipPos ? { position: "fixed", top: tooltipPos.top, left: tooltipPos.left } : {}}
+      >
         <div className="mb-4 flex items-start justify-between gap-4">
           <div>
             <p className="text-xs font-bold uppercase tracking-wide text-blue-600">
