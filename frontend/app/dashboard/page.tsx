@@ -133,7 +133,7 @@ export default function DashboardPage() {
               <div className={`space-y-6 transition-all duration-500 ease-out ${activeTab === "chat" ? "flex-1" : "w-full"}`}>
                 <section id="summary-panel" className={`rounded-[2rem] bg-white p-6 shadow-sm border border-slate-200 ${highlightClass("summary-panel")}`}>
                 <div className="mb-6">
-                  <div className="text-base font-semibold text-emerald-500 mb-3">Financial Summary</div>
+                  <div className="text-xl font-bold text-emerald-500 mb-3">Financial Summary</div>
                   <div>
                     <p className="text-sm font-semibold text-slate-500 mb-1">
                       Net Worth
@@ -259,6 +259,7 @@ export default function DashboardPage() {
           <TutorialOverlay
             title="Dashboard Tutorial"
             steps={dashboardTutorialSteps}
+            targetId={activeTutorialTarget ?? undefined}
             onStepChange={(step) => setActiveTutorialTarget(step.targetId ?? null)}
             onStepAction={(step) => {
               if (step.targetId === "holdings-panel") {
