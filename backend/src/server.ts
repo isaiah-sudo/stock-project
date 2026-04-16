@@ -49,8 +49,16 @@ app.use(
         return callback(null, true);
       }
 
-      // Allow custom domain
-      if (origin === "https://trilliumfinance.net" || origin === "http://trilliumfinance.net") {
+      // Allow custom domain and tunnel
+      const allowedOrigins = [
+        "https://trilliumfinance.net",
+        "http://trilliumfinance.net",
+        "https://www.trilliumfinance.net",
+        "http://www.trilliumfinance.net",
+        "https://trillium-finance.nport.link"
+      ];
+
+      if (allowedOrigins.includes(origin)) {
         return callback(null, true);
       }
 
