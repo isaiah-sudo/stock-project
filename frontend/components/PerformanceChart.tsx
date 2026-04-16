@@ -3,6 +3,7 @@
 import type { Portfolio } from "@stock/shared";
 import { useMemo } from "react";
 import {
+  Area,
   CartesianGrid,
   Line,
   LineChart,
@@ -22,7 +23,7 @@ export function PerformanceChart({ portfolio }: { portfolio: Portfolio }) {
     const dataPoints = 24;
     const startTime = now - 8 * 60 * 60 * 1000; // Last 8 hours
 
-    return Array.from({ length: dataPoints }, (_, i) => {
+    const data = Array.from({ length: dataPoints }, (_, i) => {
       const timeFraction = i / (dataPoints - 1);
       const timestamp = startTime + timeFraction * (now - startTime);
       
@@ -46,6 +47,24 @@ export function PerformanceChart({ portfolio }: { portfolio: Portfolio }) {
         label: date.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
         value: Number(value.toFixed(2)),
         timestamp,
+      };
+    });
+
+    return data.map((point, index) => {
+      const prevValue = index > 0 ? data[index - 1].value : undefined;
+      const nextValue = index < data.length - 1 ? data[index + 1].value : undefined;
+      const direction = index === 0
+        ? nextValue !== undefined && nextValue < point.value
+          ? "negative"
+          : "positive"
+        : point.value < (prevValue ?? point.value)
+          ? "negative"
+          : "positive";
+
+      return {
+        ...point,
+        positiveValue: direction === "positive" ? point.value : null,
+        negativeValue: direction === "negative" ? point.value : null,
       };
     });
   }, [totalValue, dayChangeDollar]);
@@ -116,14 +135,30 @@ export function PerformanceChart({ portfolio }: { portfolio: Portfolio }) {
               formatter={(value: number) => [`$${value.toLocaleString(undefined, { minimumFractionDigits: 2 })}`, "Market Value"]}
               cursor={{ stroke: "#e2e8f0", strokeWidth: 2 }}
             />
-            <Line
+            <Area
               type="monotone"
               dataKey="value"
-              stroke={themeColor}
+              stroke="transparent"
+              fill="url(#colorValue)"
+              fillOpacity={1}
+              animationDuration={1500}
+            />
+            <Line
+              type="monotone"
+              dataKey="positiveValue"
+              stroke="#10b981"
               strokeWidth={4}
               dot={false}
-              fill="url(#colorValue)"
-              activeDot={{ r: 6, strokeWidth: 0, fill: themeColor }}
+              activeDot={{ r: 6, strokeWidth: 0, fill: "#10b981" }}
+              animationDuration={1500}
+            />
+            <Line
+              type="monotone"
+              dataKey="negativeValue"
+              stroke="#ef4444"
+              strokeWidth={4}
+              dot={false}
+              activeDot={{ r: 6, strokeWidth: 0, fill: "#ef4444" }}
               animationDuration={1500}
             />
           </LineChart>
