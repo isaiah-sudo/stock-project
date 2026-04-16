@@ -54,13 +54,13 @@ export function PerformanceChart({ portfolio }: { portfolio: Portfolio }) {
   const dataMin = Math.min(...values);
   const dataMax = Math.max(...values);
   const marketValue = totalValue - (portfolio.cashBalance ?? 0);
-  const buffer = (dataMax - dataMin) * 0.2 || marketValue * 0.01;
+  const buffer = (dataMax - dataMin) * 0.28 || marketValue * 0.02;
 
   const isPositive = dayChangeDollar >= 0;
   const themeColor = isPositive ? "#10b981" : "#ef4444";
 
   return (
-    <div className="h-80 w-full rounded-3xl bg-white p-6 shadow-sm border border-gray-100 flex flex-col">
+    <div className="h-96 w-full rounded-3xl bg-white p-6 shadow-sm border border-gray-100 flex flex-col">
       <div className="mb-6 flex items-start justify-between">
         <div>
           <p className="text-xs font-bold uppercase tracking-widest text-gray-400 mb-1">Market Value</p>
@@ -79,7 +79,7 @@ export function PerformanceChart({ portfolio }: { portfolio: Portfolio }) {
 
       <div className="flex-1 w-full min-h-0">
         <ResponsiveContainer width="100%" height="100%">
-          <LineChart data={chartData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+          <LineChart data={chartData} margin={{ top: 18, right: 16, left: -10, bottom: 12 }}>
             <defs>
               <linearGradient id="colorValue" x1="0" y1="0" x2="0" y2="1">
                 <stop offset="5%" stopColor={themeColor} stopOpacity={0.1}/>

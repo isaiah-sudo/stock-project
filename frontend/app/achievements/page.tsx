@@ -1,26 +1,23 @@
 "use client";
 
 import { TrophyRoom } from "../../components/TrophyRoom";
+import { Navbar } from "../../components/Navbar";
+import { PageHeader } from "../../components/PageHeader";
 
 export default function AchievementsPage() {
   return (
-    <main className="mx-auto max-w-5xl space-y-10 p-6 sm:p-12">
-      <header className="space-y-4 text-center">
-        <div className="inline-flex h-12 w-12 items-center justify-center rounded-2xl bg-yellow-500 font-bold shadow-lg shadow-yellow-200">
-          🏆
-        </div>
-        <h1 className="text-4xl font-extrabold tracking-tight text-slate-900 leading-tight">
-          Achievement <span className="text-blue-600 underline underline-offset-8 decoration-blue-200">Trophy Room</span>
-        </h1>
-        <p className="mx-auto max-w-2xl text-lg text-slate-600 font-medium">
-          Track your trading milestones and unlock rare achievements. Each trophy represents
-          a significant accomplishment in your investment journey, from your first trade to becoming a whale trader.
-        </p>
-      </header>
+    <main className="mx-auto max-w-7xl space-y-10 p-6 sm:p-12">
+      <Navbar />
+      <PageHeader
+        icon="🏆"
+        title="Achievement"
+        accent="Trophy Room"
+        description="Track your trading milestones and unlock rare achievements. Each trophy represents a significant accomplishment in your investment journey."
+      />
 
-      <div className="max-w-4xl mx-auto">
+      <section className="rounded-[2rem] bg-white p-6 shadow-sm border border-slate-200">
         <TrophyRoom />
-      </div>
+      </section>
 
       <footer className="text-center">
         <a

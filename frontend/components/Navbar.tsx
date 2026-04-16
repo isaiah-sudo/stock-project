@@ -36,7 +36,7 @@ export function Navbar() {
           </span>
         </div>
 
-        <div className="flex items-center gap-8">
+        <div className="flex items-center gap-10">
           <Link 
             href="/dashboard"
             className={`text-sm font-bold transition-all ${

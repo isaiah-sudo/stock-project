@@ -2,10 +2,13 @@
 
 import { useEffect, useState } from "react";
 import { ChatAssistant } from "../../components/ChatAssistant";
+import { Navbar } from "../../components/Navbar";
+import { PageHeader } from "../../components/PageHeader";
 import { TutorialOverlay, type TutorialStep } from "../../components/TutorialOverlay";
 import { getMode } from "../../lib/appMode";
 
 export default function ChatPage() {
+  const [isVisible, setIsVisible] = useState(false);
   const [showTutorial, setShowTutorial] = useState(false);
   const [activeTutorialTarget, setActiveTutorialTarget] = useState<string | null>(null);
 
@@ -14,6 +17,10 @@ export default function ChatPage() {
     if (getMode() === "educational" && !dismissed) {
       setShowTutorial(true);
     }
+  }, []);
+
+  useEffect(() => {
+    setIsVisible(true);
   }, []);
 
   const chatSteps: TutorialStep[] = [
@@ -33,30 +40,27 @@ export default function ChatPage() {
   ];
 
   return (
-    <main className="mx-auto max-w-5xl space-y-10 p-6 sm:p-12">
-      <header className="space-y-4 text-center">
-        <div className="inline-flex h-12 w-12 items-center justify-center rounded-2xl bg-blue-500 font-bold shadow-lg shadow-blue-200">
-          💬
-        </div>
-        <h1 className="text-4xl font-extrabold tracking-tight text-slate-900 leading-tight">
-          AI <span className="text-blue-600 underline underline-offset-8 decoration-blue-200">Chat Assistant</span>
-        </h1>
-        <p className="mx-auto max-w-2xl text-lg text-slate-600 font-medium">
-          Get personalized investment advice from our AI financial advisor. Ask about portfolio analysis,
-          buy/sell recommendations, risk management strategies, and market insights.
-        </p>
-      </header>
+    <main className="mx-auto max-w-7xl space-y-10 p-6 sm:p-12">
+      <Navbar />
+      <PageHeader
+        icon="💬"
+        title="AI"
+        accent="Chat Assistant"
+        description="Open the chat panel to get personalized investment advice, portfolio guidance, and market insights from your AI assistant."
+      />
 
-      <div
+      <section
         id="chat-assistant-panel"
-        className={`max-w-4xl mx-auto ${
+        className={`rounded-[2rem] bg-white p-6 shadow-sm border border-slate-200 transition-all duration-700 ease-out ${isVisible ? "translate-x-0 opacity-100" : "translate-x-10 opacity-0"} ${
           activeTutorialTarget === "chat-assistant-panel"
-            ? "rounded-3xl ring-4 ring-blue-300 ring-offset-2"
+            ? "ring-4 ring-blue-300 ring-offset-2"
             : ""
         }`}
       >
-        <ChatAssistant />
-      </div>
+        <div className="min-h-[640px]">
+          <ChatAssistant />
+        </div>
+      </section>
 
       <footer
         id="chat-return-link"
