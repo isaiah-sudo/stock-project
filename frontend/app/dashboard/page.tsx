@@ -62,6 +62,7 @@ export default function DashboardPage() {
   return (
     <div className="min-h-screen bg-slate-50/50">
       <main className="mx-auto max-w-7xl space-y-8 p-4 sm:p-8">
+        <Navbar />
         {error ? (
           <div className="rounded-3xl bg-red-50 p-4 text-sm font-semibold text-red-700 border border-red-100">
             {error}

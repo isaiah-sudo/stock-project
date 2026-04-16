@@ -7,16 +7,16 @@ export function Navbar() {
   const pathname = usePathname();
 
   return (
-    <nav className="border-b border-slate-100 bg-white/80 backdrop-blur-md sticky top-0 z-50">
-      <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-4 sm:px-8">
-        <Link href="/dashboard" className="flex items-center gap-2 group">
+    <section className="rounded-[2rem] bg-white p-6 shadow-sm border border-slate-200">
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-2 group">
           <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-blue-600 font-bold text-white transition-all transform group-hover:rotate-6">
             T
           </div>
           <span className="text-xl font-extrabold tracking-tight text-slate-900 group-hover:text-blue-600 transition-colors">
             Trillium <span className="text-blue-600">Finance</span>
           </span>
-        </Link>
+        </div>
 
         <div className="flex items-center gap-8">
           <Link 
@@ -68,6 +68,6 @@ export function Navbar() {
           </button>
         </div>
       </div>
-    </nav>
+    </section>
   );
 }
