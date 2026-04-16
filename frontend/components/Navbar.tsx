@@ -40,14 +40,19 @@ export function Navbar({ onChatClick }: NavbarProps) {
   return (
     <section className="rounded-[2rem] bg-white p-6 shadow-sm border border-slate-200">
       <div className="flex items-center justify-between">
-        <div className="flex items-center gap-2 group">
+        <a
+          href="https://trilliumfinance.net"
+          target="_blank"
+          rel="noreferrer noopener"
+          className="flex items-center gap-2 group"
+        >
           <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-blue-600 font-bold text-white transition-all transform group-hover:rotate-6">
             T
           </div>
           <span className="text-xl font-extrabold tracking-tight text-slate-900 group-hover:text-blue-600 transition-colors">
             Trillium <span className="text-blue-600">Finance</span>
           </span>
-        </div>
+        </a>
 
         <div className="flex items-center gap-10">
           <Link 

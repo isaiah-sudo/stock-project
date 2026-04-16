@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import dynamic from "next/dynamic";
 import type { Portfolio } from "@stock/shared";
 import { apiFetch } from "../../lib/api";
@@ -12,6 +12,64 @@ import { Navbar } from "../../components/Navbar";
 import { Leaderboard } from "../../components/Leaderboard";
 import { TutorialOverlay, type TutorialStep } from "../../components/TutorialOverlay";
 import { dismissEducationTutorial, shouldShowEducationTutorial } from "../../lib/appMode";
+
+function TradingViewWidget() {
+  const widgetRef = useRef<HTMLDivElement | null>(null);
+
+  useEffect(() => {
+    if (!widgetRef.current) return;
+    widgetRef.current.innerHTML = "";
+
+    const script = document.createElement("script");
+    script.src = "https://s3.tradingview.com/external-embedding/embed-widget-advanced-chart.js";
+    script.async = true;
+    script.textContent = JSON.stringify({
+      allow_symbol_change: true,
+      calendar: false,
+      details: false,
+      hide_side_toolbar: true,
+      hide_top_toolbar: false,
+      hide_legend: false,
+      hide_volume: false,
+      hotlist: false,
+      interval: "D",
+      locale: "en",
+      save_image: true,
+      style: "1",
+      symbol: "NASDAQ:AAPL",
+      theme: "dark",
+      timezone: "Etc/UTC",
+      backgroundColor: "#0F0F0F",
+      gridColor: "rgba(242, 242, 242, 0.06)",
+      watchlist: [],
+      withdateranges: false,
+      compareSymbols: [],
+      studies: [],
+      autosize: true
+    }, null, 2);
+
+    widgetRef.current.appendChild(script);
+
+    return () => {
+      if (widgetRef.current) {
+        widgetRef.current.innerHTML = "";
+      }
+    };
+  }, []);
+
+  return (
+    <div className="tradingview-widget-container h-full w-full">
+      <div className="tradingview-widget-container__widget h-[calc(100%-32px)] w-full"></div>
+      <div className="tradingview-widget-copyright text-white text-sm">
+        <a href="https://www.tradingview.com/symbols/NASDAQ-AAPL/" rel="noopener noreferrer nofollow" target="_blank" className="text-blue-400">
+          AAPL stock chart
+        </a>
+        <span className="ml-1"> by TradingView</span>
+      </div>
+      <div ref={widgetRef} />
+    </div>
+  );
+}
 
 const PerformanceChart = dynamic(() => import("../../components/PerformanceChart").then((mod) => mod.PerformanceChart), { 
   ssr: false, 
@@ -119,9 +177,10 @@ export default function DashboardPage() {
         ) : null}
 
         {portfolio ? (
-          <div className={`flex flex-col gap-6 ${activeTab === "chat" ? "lg:flex-row lg:items-stretch" : "lg:flex-col"}`}>
-            <div className={`space-y-6 transition-all duration-500 ease-out ${activeTab === "chat" ? "flex-1" : "w-full"}`}>
-              <section id="summary-panel" className={`rounded-[2rem] bg-white p-6 shadow-sm border border-slate-200 ${highlightClass("summary-panel")}`}>
+          <>
+            <div className={`flex flex-col gap-6 ${activeTab === "chat" ? "lg:flex-row lg:items-stretch" : "lg:flex-col"}`}>
+              <div className={`space-y-6 transition-all duration-500 ease-out ${activeTab === "chat" ? "flex-1" : "w-full"}`}>
+                <section id="summary-panel" className={`rounded-[2rem] bg-white p-6 shadow-sm border border-slate-200 ${highlightClass("summary-panel")}`}>
                 <div className="flex items-center justify-between mb-6">
                   <div className="text-3xl font-black text-slate-900">{formatCurrency(portfolio.totalValue)}</div>
                   <div className="text-sm font-semibold text-emerald-500">Financial Summary</div>
@@ -201,6 +260,14 @@ export default function DashboardPage() {
               </div>
             </div>
           </div>
+
+            <section className="rounded-[2rem] bg-slate-950 p-6 shadow-sm border border-slate-800 overflow-hidden">
+              <div className="mb-4 text-white text-xl font-semibold">TradingView Embed Test</div>
+              <div className="h-[520px] bg-slate-950">
+                <TradingViewWidget />
+              </div>
+            </section>
+          </>
         ) : (
           <div className="flex min-h-[56vh] items-center justify-center">
             <div className="h-12 w-12 animate-spin rounded-full border-4 border-blue-600 border-t-transparent shadow-lg shadow-blue-200"></div>
