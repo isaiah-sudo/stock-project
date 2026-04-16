@@ -63,6 +63,7 @@ export default function LeaderboardPage() {
             : ""
         }`}
       >
+        <a
           href="/dashboard"
           className="inline-flex items-center gap-2 rounded-2xl border border-slate-200 bg-white px-6 py-3 font-semibold text-slate-700 shadow-sm hover:bg-slate-50 transition-all font-sans"
         >

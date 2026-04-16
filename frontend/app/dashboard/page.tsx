@@ -166,7 +166,6 @@ export default function DashboardPage() {
                 <div className="flex items-center justify-between mb-6">
                   <div className="text-3xl font-black text-slate-900">{formatCurrency(portfolio.totalValue)}</div>
                   <div className="text-sm font-semibold text-emerald-500">Financial Summary</div>
->>>>>>> 07fb0e182e676f8ca9fe5b4ff3670a496e617ead
                 </div>
                 <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-4">
                   <div>
