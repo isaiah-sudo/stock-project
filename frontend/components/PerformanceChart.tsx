@@ -3,6 +3,7 @@
 import type { Portfolio } from "@stock/shared";
 import { useMemo } from "react";
 import {
+  Area,
   CartesianGrid,
   Line,
   LineChart,
@@ -56,7 +57,7 @@ export function PerformanceChart({ portfolio }: { portfolio: Portfolio }) {
   const buffer = (dataMax - dataMin) * 0.28 || marketValue * 0.02;
 
   const isPositive = dayChangeDollar >= 0;
-  const lineColor = "#10b981";
+  const lineColor = isPositive ? "#10b981" : "#ef4444";
 
   return (
     <div className="h-96 w-full rounded-3xl bg-white p-6 shadow-sm border border-gray-100 flex flex-col">
@@ -107,6 +108,14 @@ export function PerformanceChart({ portfolio }: { portfolio: Portfolio }) {
               labelStyle={{ fontSize: "11px", color: "#64748b", marginBottom: "4px", textTransform: "uppercase", letterSpacing: "0.05em" }}
               formatter={(value: number) => [`$${value.toLocaleString(undefined, { minimumFractionDigits: 2 })}`, "Market Value"]}
               cursor={{ stroke: "#e2e8f0", strokeWidth: 2 }}
+            />
+            <Area
+              type="monotone"
+              dataKey="value"
+              stroke="transparent"
+              fill={lineColor}
+              fillOpacity={0.12}
+              animationDuration={1500}
             />
             <Line
               type="monotone"
