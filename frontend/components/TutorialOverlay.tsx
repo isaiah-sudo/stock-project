@@ -45,8 +45,12 @@ export function TutorialOverlay({
         const rect = target.getBoundingClientRect();
         // Position tooltip below the target or above if no space
         const spaceBelow = window.innerHeight - rect.bottom;
-        const top = spaceBelow > 300 ? rect.bottom + 20 : Math.max(20, rect.top - 320);
-        const left = Math.min(window.innerWidth - 400, Math.max(20, rect.left + rect.width / 2 - 200));
+        const boxHeight = 280; // Estimated height for the smaller box
+        const boxWidth = 384;  // w-96 = 384px
+        
+        const top = spaceBelow > boxHeight + 40 ? rect.bottom + 20 : Math.max(20, rect.top - boxHeight - 20);
+        const left = Math.min(window.innerWidth - boxWidth - 20, Math.max(20, rect.left + rect.width / 2 - boxWidth / 2));
+        
         setTooltipPos({ top, left });
         
         target.classList.add("tutorial-target-highlight");
@@ -61,9 +65,9 @@ export function TutorialOverlay({
   const progress = ((index + 1) / steps.length) * 100;
 
   return (
-    <div className={`fixed inset-0 z-[60] ${!tooltipPos ? "flex items-center justify-center" : ""} bg-slate-900/50 p-4 backdrop-blur-sm`}>
+    <div className={`fixed inset-0 z-[60] ${!tooltipPos ? "flex items-center justify-center" : ""} bg-slate-900/40 p-4 backdrop-blur-sm transition-all duration-500`}>
       <div 
-        className="w-full max-w-xl rounded-3xl border border-slate-100 bg-white p-6 shadow-2xl"
+        className="w-full max-w-sm rounded-[2rem] border border-slate-100 bg-white p-6 shadow-2xl transition-all duration-700 ease-[cubic-bezier(0.23,1,0.32,1)]"
         style={tooltipPos ? { position: "fixed", top: tooltipPos.top, left: tooltipPos.left } : {}}
       >
         <div className="mb-4 flex items-start justify-between gap-4">
