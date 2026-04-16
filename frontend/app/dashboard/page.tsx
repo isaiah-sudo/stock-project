@@ -235,6 +235,7 @@ export default function DashboardPage() {
           <TutorialOverlay
             title="Dashboard Tutorial"
             steps={dashboardTutorialSteps}
+            targetId={activeTutorialTarget ?? undefined}
             onStepChange={(step) => setActiveTutorialTarget(step.targetId ?? null)}
             onStepAction={(step) => {
               if (step.targetId === "holdings-panel") {
