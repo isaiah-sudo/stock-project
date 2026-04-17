@@ -30,6 +30,17 @@ Production-ready starter for a beginner paper trading stock game app:
 2. Configure environment variables
    - Copy `backend/.env.example` to `backend/.env`
    - Copy `frontend/.env.local.example` to `frontend/.env.local`
+   Import the template files to their target names
+Copy using Linux/Unix/MacOS command:
+`cp backend/.env.example backend/.env && cp frontend/.env.local.example frontend/.env.local`
+
+Copy using Windows (PowerShell) command:
+`Copy-Item -Path backend\.env.example -Destination backend\.env`
+`Copy-Item -Path frontend\.env.local.example -Destination frontend\.env.local`
+
+Copy using Windows (Command Prompt) command:
+`copy backend\.env.example backend\.env`
+`copy frontend\.env.local.example frontend\.env.local`
 3. Ensure Ollama is running locally if you want live AI responses:
    - `ollama serve`
 4. Set up Python quote service dependencies:
