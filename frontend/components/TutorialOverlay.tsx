@@ -31,11 +31,21 @@ export function TutorialOverlay({
 }: TutorialOverlayProps) {
   const [index, setIndex] = useState(0);
   const [tooltipPos, setTooltipPos] = useState<{ top: number; left: number; isMobile?: boolean } | null>(null);
+  const [isScrolling, setIsScrolling] = useState(false);
   const tooltipRef = useRef<HTMLDivElement>(null);
   const step = useMemo(() => steps[index], [steps, index]);
 
   const isFirst = index === 0;
   const isLast = index === steps.length - 1;
+
+  // Global Scroll Locking
+  useEffect(() => {
+    const originalStyle = window.getComputedStyle(document.body).overflow;
+    document.body.style.overflow = "hidden";
+    return () => {
+      document.body.style.overflow = originalStyle;
+    };
+  }, []);
 
   // Measurement and positioning logic
   const updatePosition = () => {
@@ -55,13 +65,17 @@ export function TutorialOverlay({
           const boxHeight = tooltipRect.height;
           const boxWidth = tooltipRect.width;
           
+          // Strategy: Try below, then above, then right, then left
           let top = rect.bottom + padding;
+          let left = rect.left + rect.width / 2 - boxWidth / 2;
+
+          // If too low, move to top
           if (top + boxHeight > window.innerHeight - padding) {
              top = rect.top - boxHeight - padding;
           }
+          
+          // Final viewport clamping
           top = Math.max(padding, Math.min(top, window.innerHeight - boxHeight - padding));
-
-          let left = rect.left + rect.width / 2 - boxWidth / 2;
           left = Math.max(padding, Math.min(left, window.innerWidth - boxWidth - padding));
           
           setTooltipPos({ top, left, isMobile: false });
@@ -76,7 +90,25 @@ export function TutorialOverlay({
 
   useLayoutEffect(() => {
     onStepChange?.(step, index);
-    updatePosition();
+    
+    // Auto-scroll target into view
+    if (step.targetId) {
+      const target = document.getElementById(step.targetId);
+      if (target) {
+        setIsScrolling(true);
+        target.scrollIntoView({ behavior: "smooth", block: "center" });
+        
+        // Wait for smooth scroll to finish approximately before showing tooltip
+        const scrollTimeout = setTimeout(() => {
+          setIsScrolling(false);
+          updatePosition();
+        }, 500);
+
+        return () => clearTimeout(scrollTimeout);
+      }
+    } else {
+      updatePosition();
+    }
     
     window.addEventListener("resize", updatePosition);
     return () => {
@@ -91,7 +123,10 @@ export function TutorialOverlay({
 
   // Handle styles based on position and mobile state
   const getTooltipStyle = () => {
-    if (!tooltipPos) return {};
+    if (!tooltipPos || isScrolling) {
+      return { opacity: 0, pointerEvents: "none" as const };
+    }
+    
     if (tooltipPos.isMobile) {
       return {
         position: "fixed" as const,
@@ -99,13 +134,15 @@ export function TutorialOverlay({
         left: "50%",
         transform: "translateX(-50%)",
         width: "calc(100% - 32px)",
-        maxWidth: "400px"
+        maxWidth: "400px",
+        opacity: 1
       };
     }
     return {
       position: "fixed" as const,
       top: tooltipPos.top,
       left: tooltipPos.left,
+      opacity: 1
     };
   };
 
