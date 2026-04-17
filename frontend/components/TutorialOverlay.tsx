@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 
 export type TutorialStep = {
   title: string;
@@ -30,45 +30,91 @@ export function TutorialOverlay({
   onStepAction
 }: TutorialOverlayProps) {
   const [index, setIndex] = useState(0);
-  const [tooltipPos, setTooltipPos] = useState<{ top: number; left: number } | null>(null);
+  const [tooltipPos, setTooltipPos] = useState<{ top: number; left: number; isMobile?: boolean } | null>(null);
+  const tooltipRef = useRef<HTMLDivElement>(null);
   const step = useMemo(() => steps[index], [steps, index]);
 
   const isFirst = index === 0;
   const isLast = index === steps.length - 1;
 
-  useEffect(() => {
-    onStepChange?.(step, index);
-    
+  // Measurement and positioning logic
+  const updatePosition = () => {
     if (step.targetId) {
       const target = document.getElementById(step.targetId);
-      if (target) {
+      const tooltip = tooltipRef.current;
+      
+      if (target && tooltip) {
         const rect = target.getBoundingClientRect();
-        // Position tooltip below the target or above if no space
-        const spaceBelow = window.innerHeight - rect.bottom;
-        const boxHeight = 280; // Estimated height for the smaller box
-        const boxWidth = 384;  // w-96 = 384px
-        
-        const top = spaceBelow > boxHeight + 40 ? rect.bottom + 20 : Math.max(20, rect.top - boxHeight - 20);
-        const left = Math.min(window.innerWidth - boxWidth - 20, Math.max(20, rect.left + rect.width / 2 - boxWidth / 2));
-        
-        setTooltipPos({ top, left });
+        const tooltipRect = tooltip.getBoundingClientRect();
+        const isMobile = window.innerWidth < 640;
+
+        if (isMobile) {
+          setTooltipPos({ top: 0, left: 0, isMobile: true });
+        } else {
+          const padding = 20;
+          const boxHeight = tooltipRect.height;
+          const boxWidth = tooltipRect.width;
+          
+          let top = rect.bottom + padding;
+          if (top + boxHeight > window.innerHeight - padding) {
+             top = rect.top - boxHeight - padding;
+          }
+          top = Math.max(padding, Math.min(top, window.innerHeight - boxHeight - padding));
+
+          let left = rect.left + rect.width / 2 - boxWidth / 2;
+          left = Math.max(padding, Math.min(left, window.innerWidth - boxWidth - padding));
+          
+          setTooltipPos({ top, left, isMobile: false });
+        }
         
         target.classList.add("tutorial-target-highlight");
-        return () => {
-          target.classList.remove("tutorial-target-highlight");
-        };
       }
+    } else {
+      setTooltipPos(null);
     }
-    setTooltipPos(null);
+  };
+
+  useLayoutEffect(() => {
+    onStepChange?.(step, index);
+    updatePosition();
+    
+    window.addEventListener("resize", updatePosition);
+    return () => {
+      window.removeEventListener("resize", updatePosition);
+      if (step.targetId) {
+        document.getElementById(step.targetId)?.classList.remove("tutorial-target-highlight");
+      }
+    };
   }, [index, onStepChange, step]);
 
   const progress = ((index + 1) / steps.length) * 100;
 
+  // Handle styles based on position and mobile state
+  const getTooltipStyle = () => {
+    if (!tooltipPos) return {};
+    if (tooltipPos.isMobile) {
+      return {
+        position: "fixed" as const,
+        bottom: "20px",
+        left: "50%",
+        transform: "translateX(-50%)",
+        width: "calc(100% - 32px)",
+        maxWidth: "400px"
+      };
+    }
+    return {
+      position: "fixed" as const,
+      top: tooltipPos.top,
+      left: tooltipPos.left,
+    };
+  };
+
   return (
     <div className={`fixed inset-0 z-[60] ${!tooltipPos ? "flex items-center justify-center" : ""} bg-slate-900/40 p-4 backdrop-blur-sm transition-all duration-500`}>
       <div 
-        className="w-full max-w-sm rounded-[2rem] border border-slate-100 bg-white p-6 shadow-2xl transition-all duration-700 ease-[cubic-bezier(0.23,1,0.32,1)]"
-        style={tooltipPos ? { position: "fixed", top: tooltipPos.top, left: tooltipPos.left } : {}}
+        ref={tooltipRef}
+        className={`w-full ${tooltipPos?.isMobile ? "" : "max-w-sm"} rounded-[2rem] border border-slate-100 bg-white p-6 shadow-2xl transition-all duration-500 ease-[cubic-bezier(0.23,1,0.32,1)]`}
+        style={getTooltipStyle()}
       >
         <div className="mb-4 flex items-start justify-between gap-4">
           <div>
