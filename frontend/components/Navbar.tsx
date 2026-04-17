@@ -38,21 +38,21 @@ export function Navbar({ onChatClick }: NavbarProps) {
   }
 
   return (
-    <section className="rounded-[2rem] bg-white p-6 shadow-sm border border-slate-200">
-      <div className="flex items-center justify-between">
+    <section className="rounded-[2rem] border border-slate-200 bg-white p-4 shadow-sm sm:p-6">
+      <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
         <a
           href="https://trilliumfinance.net"
-          className="flex items-center gap-2 group"
+          className="group flex items-center gap-2 self-start"
         >
           <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-blue-600 font-bold text-white transition-all transform group-hover:rotate-6">
             T
           </div>
-          <span className="text-xl font-extrabold tracking-tight text-slate-900 group-hover:text-blue-600 transition-colors">
+          <span className="text-lg font-extrabold tracking-tight text-slate-900 transition-colors group-hover:text-blue-600 sm:text-xl">
             Trillium <span className="text-blue-600">Finance</span>
           </span>
         </a>
 
-        <div className="flex items-center gap-10">
+        <div className="flex flex-wrap items-center gap-x-5 gap-y-2 text-sm sm:gap-8">
           <Link 
             href="/dashboard"
             className={`text-sm font-bold transition-all ${
@@ -87,8 +87,8 @@ export function Navbar({ onChatClick }: NavbarProps) {
           </Link>
         </div>
 
-        <div className="flex items-center gap-4">
-          <label className="flex items-center gap-2 rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-xs font-bold text-slate-600">
+        <div className="flex w-full flex-wrap items-center gap-2 sm:gap-4 lg:w-auto lg:justify-end">
+          <label className="flex w-full items-center justify-between gap-2 rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-xs font-bold text-slate-600 sm:w-auto sm:justify-start">
             Mode
             <select
               value={mode}
@@ -104,7 +104,7 @@ export function Navbar({ onChatClick }: NavbarProps) {
               localStorage.removeItem("token");
               window.location.href = "/";
             }}
-            className="rounded-xl bg-slate-100 px-4 py-2 text-xs font-bold text-slate-600 hover:bg-slate-200"
+            className="w-full rounded-xl bg-slate-100 px-4 py-2 text-xs font-bold text-slate-600 hover:bg-slate-200 sm:w-auto"
           >
             Logout
           </button>

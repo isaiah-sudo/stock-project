@@ -6,7 +6,6 @@ body {
   @apply bg-slate-50 text-slate-900;
 }
 
-<<<<<<< Updated upstream
 @keyframes tutorial-pulse {
   0% { box-shadow: 0 0 0 0 rgba(37, 99, 235, 0.4); }
   70% { box-shadow: 0 0 0 15px rgba(37, 99, 235, 0); }
@@ -18,7 +17,8 @@ body {
   z-index: 70 !important;
   animation: tutorial-pulse 2s infinite;
   @apply ring-4 ring-blue-600/30 ring-offset-2 !important;
-=======
+}
+
 /* Keep third-party help/learning launchers out of the main content area. */
 [id*="learning-center" i],
 [class*="learning-center" i],
@@ -51,5 +51,4 @@ iframe[class*="launcher" i] {
   transform: none !important;
   margin: 0 !important;
   z-index: 9999 !important;
->>>>>>> Stashed changes
 }

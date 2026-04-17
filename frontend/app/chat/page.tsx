@@ -40,7 +40,7 @@ export default function ChatPage() {
   ];
 
   return (
-    <main className="mx-auto max-w-7xl space-y-10 p-6 sm:p-12">
+    <main className="mx-auto max-w-7xl space-y-6 p-4 sm:space-y-10 sm:p-12">
       <Navbar />
       <PageHeader
         icon="💬"
@@ -51,13 +51,13 @@ export default function ChatPage() {
 
       <section
         id="chat-assistant-panel"
-        className={`rounded-[2rem] bg-white p-6 shadow-sm border border-slate-200 transition-all duration-700 ease-out ${isVisible ? "translate-x-0 opacity-100" : "translate-x-10 opacity-0"} ${
+        className={`rounded-[2rem] border border-slate-200 bg-white p-4 shadow-sm transition-all duration-700 ease-out sm:p-6 ${isVisible ? "translate-x-0 opacity-100" : "translate-x-10 opacity-0"} ${
           activeTutorialTarget === "chat-assistant-panel"
             ? "ring-4 ring-blue-300 ring-offset-2"
             : ""
         }`}
       >
-        <div className="min-h-[640px]">
+        <div className="min-h-[60vh] sm:min-h-[640px]">
           <ChatAssistant />
         </div>
       </section>
