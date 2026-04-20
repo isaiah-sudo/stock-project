@@ -202,6 +202,338 @@ class PaperTradingService {
     }
   }
 
+  async getTradePreview(userId: string, input: TradePreviewRequest): Promise<TradePreview | { error: string }> {
+    const normalizedSymbol = input.symbol.trim().toUpperCase();
+    const orderType = input.orderType ?? "market";
+
+    if (!normalizedSymbol) {
+      return { error: "Choose a stock symbol before requesting a preview." };
+    }
+
+    const portfolioResult = (await this.getPortfolio(userId)) as Portfolio | { error: string } | null;
+    if (!portfolioResult || "error" in portfolioResult) {
+      return { error: "Link your paper trading account before previewing trades." };
+    }
+
+    const portfolio = portfolioResult;
+
+    const quoteResult = (await this.getQuote(normalizedSymbol)) as Quote | { error: string } | null;
+    if (!quoteResult || "error" in quoteResult) {
+      return { error: "We could not find a current paper quote for that symbol." };
+    }
+
+    const quote = quoteResult;
+
+    const currentPosition = portfolio.holdings.find((holding) => holding.symbol === normalizedSymbol);
+    const positionQuantityBefore = currentPosition?.quantity ?? 0;
+    const estimatedPrice = quote.price;
+    const estimatedNotional = Number((estimatedPrice * input.quantity).toFixed(2));
+    const projectedCashBalance = Number(
+      (
+        input.side === "buy"
+          ? portfolio.cashBalance - estimatedNotional
+          : portfolio.cashBalance + estimatedNotional
+      ).toFixed(2),
+    );
+    const positionQuantityAfter =
+      input.side === "buy" ? positionQuantityBefore + input.quantity : positionQuantityBefore - input.quantity;
+
+    if (input.side === "buy" && estimatedNotional > portfolio.cashBalance) {
+      return { error: "This practice trade would cost more cash than you currently have in your simulator." };
+    }
+
+    if (input.side === "sell" && input.quantity > positionQuantityBefore) {
+      return { error: "You cannot sell more shares than your paper portfolio currently holds." };
+    }
+
+    const holdingValueBySymbol = new Map<string, number>(
+      portfolio.holdings.map((holding) => [holding.symbol, holding.quantity * holding.currentPrice]),
+    );
+    const currentSymbolValueAfter = Math.max(positionQuantityAfter, 0) * estimatedPrice;
+    holdingValueBySymbol.set(normalizedSymbol, currentSymbolValueAfter);
+
+    const totalHoldingsValueAfter = Array.from(holdingValueBySymbol.values()).reduce((sum, value) => sum + value, 0);
+    const largestHoldingValueAfter = Array.from(holdingValueBySymbol.values()).reduce(
+      (max, value) => (value > max ? value : max),
+      0,
+    );
+    const largestPositionSharePct =
+      totalHoldingsValueAfter > 0 ? Number(((largestHoldingValueAfter / totalHoldingsValueAfter) * 100).toFixed(1)) : 0;
+    const diversificationLabel = this.getDiversificationLabel(largestPositionSharePct);
+    const riskLevel = this.getRiskLevelFromConcentration(largestPositionSharePct, totalHoldingsValueAfter, orderType);
+    const warnings = this.buildPreviewWarnings({
+      side: input.side,
+      orderType,
+      estimatedNotional,
+      projectedCashBalance,
+      largestPositionSharePct,
+      positionQuantityBefore,
+      positionQuantityAfter,
+    });
+
+    return {
+      symbol: normalizedSymbol,
+      side: input.side,
+      orderType,
+      quantity: input.quantity,
+      estimatedPrice: Number(estimatedPrice.toFixed(2)),
+      estimatedNotional,
+      projectedCashBalance,
+      currentCashBalance: Number(portfolio.cashBalance.toFixed(2)),
+      positionQuantityBefore,
+      positionQuantityAfter,
+      largestPositionSharePct,
+      diversificationLabel,
+      riskLevel,
+      orderTypeExplanation: this.getOrderTypeExplanation(orderType, input.side),
+      marketContext: `${normalizedSymbol} is being previewed using the latest simulated quote of ${estimatedPrice.toFixed(
+        2,
+      )}. Real markets move constantly, so a paper preview is a teaching estimate rather than a promise.`,
+      beginnerSummary: this.getPreviewSummary({
+        side: input.side,
+        quantity: input.quantity,
+        symbol: normalizedSymbol,
+        estimatedNotional,
+        projectedCashBalance,
+        orderType,
+      }),
+      learningBullets: this.buildLearningBullets({
+        side: input.side,
+        orderType,
+        diversificationLabel,
+        largestPositionSharePct,
+        projectedCashBalance,
+        currentCashBalance: portfolio.cashBalance,
+      }),
+      warnings,
+    };
+  }
+
+  async getPortfolioCoaching(userId: string): Promise<PortfolioCoaching | null> {
+    const portfolioResult = (await this.getPortfolio(userId)) as Portfolio | { error: string } | null;
+    if (!portfolioResult || "error" in portfolioResult) {
+      return null;
+    }
+
+    const portfolio = portfolioResult;
+
+    const transactions = await this.getTransactions(userId);
+    const holdingsValue = portfolio.holdings.reduce((sum, holding) => sum + holding.marketValue, 0);
+    const totalValue = holdingsValue + portfolio.cashBalance;
+    const concentrationPct =
+      holdingsValue > 0
+        ? Number(
+            (
+              (Math.max(...portfolio.holdings.map((holding) => holding.marketValue), 0) / holdingsValue) *
+              100
+            ).toFixed(1),
+          )
+        : 0;
+    const cashPct = totalValue > 0 ? Number(((portfolio.cashBalance / totalValue) * 100).toFixed(1)) : 100;
+    const diversificationLabel = this.getDiversificationLabel(concentrationPct);
+    const riskLevel = this.getRiskLevelFromConcentration(concentrationPct, holdingsValue, "market");
+    const recentTransactions = transactions.filter((transaction) => {
+      const datedTransaction = transaction as Transaction & {
+        timestamp?: string;
+        createdAt?: string;
+        date?: string;
+      };
+      const rawDate = datedTransaction.timestamp ?? datedTransaction.createdAt ?? datedTransaction.date;
+      const transactionTime = rawDate ? new Date(rawDate).getTime() : Number.NaN;
+      return Number.isFinite(transactionTime) && Date.now() - transactionTime < 1000 * 60 * 60 * 24 * 14;
+    });
+    const styleLabel = this.getStyleLabel({
+      concentrationPct,
+      cashPct,
+      recentTradeCount: recentTransactions.length,
+      holdingsCount: portfolio.holdings.length,
+    });
+
+    return {
+      riskLevel,
+      diversificationLabel,
+      concentrationPct,
+      cashPct,
+      holdingsCount: portfolio.holdings.length,
+      styleLabel,
+      summary: this.getCoachingSummary(styleLabel, diversificationLabel, cashPct, recentTransactions.length),
+      strengths: this.getCoachingStrengths(portfolio.holdings.length, diversificationLabel, cashPct),
+      cautions: this.getCoachingCautions(concentrationPct, cashPct, recentTransactions.length),
+      nextLessons: this.getNextLessons(styleLabel, diversificationLabel, recentTransactions.length),
+      reflectionPrompt: this.getReflectionPrompt(styleLabel, concentrationPct, cashPct),
+    };
+  }
+
+  getLearningChallenges(): LearningChallenge[] {
+    return [
+      {
+        id: "risk-drawdown",
+        category: "risk",
+        title: "One stock suddenly drops",
+        scenario:
+          "Your paper portfolio has three holdings, but one of them makes up nearly half of your invested money. After weak earnings, that stock falls 12% in a day.",
+        difficulty: "beginner",
+        concept: "Concentration can magnify both gains and losses.",
+        options: [
+          {
+            id: "risk-a",
+            label: "The portfolio barely changes because there are still three stocks.",
+            explanation:
+              "Three holdings can still be concentrated if one position is much larger than the others. The size of each position matters, not just the count.",
+            isBest: false,
+          },
+          {
+            id: "risk-b",
+            label: "The portfolio feels the drop more because one position is carrying too much weight.",
+            explanation:
+              "Correct. When one holding dominates the portfolio, its moves have a larger effect on the total result.",
+            isBest: true,
+          },
+          {
+            id: "risk-c",
+            label: "The drop does not matter in paper trading because no real money is involved.",
+            explanation:
+              "Paper trading removes real financial harm, but the lesson still matters because it teaches how portfolio structure changes outcomes.",
+            isBest: false,
+          },
+        ],
+        takeaway: "Risk is strongly influenced by position size. A portfolio can look diversified on the surface while still leaning heavily on one idea.",
+      },
+      {
+        id: "diversification-sector",
+        category: "diversification",
+        title: "Five stocks, one industry",
+        scenario:
+          "A learner buys five different companies, but all five are large technology stocks that often react to the same news.",
+        difficulty: "beginner",
+        concept: "Owning more tickers is not the same as spreading exposure.",
+        options: [
+          {
+            id: "div-a",
+            label: "This is automatically diversified because there are five positions.",
+            explanation:
+              "A larger number of holdings can help, but if they move for similar reasons the portfolio can still be tightly clustered.",
+            isBest: false,
+          },
+          {
+            id: "div-b",
+            label: "This is only partly diversified because the holdings may rise and fall together.",
+            explanation:
+              "Correct. Diversification is about different sources of risk, not just the number of names on the screen.",
+            isBest: true,
+          },
+          {
+            id: "div-c",
+            label: "It is safer than cash in every situation.",
+            explanation:
+              "No portfolio is safer in every situation. Different allocations solve different goals and tradeoffs.",
+            isBest: false,
+          },
+        ],
+        takeaway: "Diversification improves when holdings respond to different drivers, not just when the list gets longer.",
+      },
+      {
+        id: "order-types-gap",
+        category: "order-types",
+        title: "Learning the difference between order types",
+        scenario:
+          "You are previewing a trade before the market opens and notice the app offers market, limit, and stop order types in the educational flow.",
+        difficulty: "beginner",
+        concept: "Order types describe how you want an execution condition to behave.",
+        options: [
+          {
+            id: "ord-a",
+            label: "A market order focuses on filling quickly at the best currently available simulated price.",
+            explanation:
+              "Correct. A market order emphasizes immediate execution, though the final real-world fill can differ from the quote you saw earlier.",
+            isBest: true,
+          },
+          {
+            id: "ord-b",
+            label: "A limit order guarantees execution no matter what price the market reaches.",
+            explanation:
+              "A limit order sets a price condition, but it does not guarantee execution if the market never reaches that level.",
+            isBest: false,
+          },
+          {
+            id: "ord-c",
+            label: "A stop order is the same thing as a limit order.",
+            explanation:
+              "They are different tools. A stop order becomes relevant after a trigger level is reached, while a limit order centers on a chosen price or better.",
+            isBest: false,
+          },
+        ],
+        takeaway: "Order types are tradeoff tools. Some focus on speed, while others focus on price conditions.",
+      },
+      {
+        id: "psychology-fomo",
+        category: "psychology",
+        title: "A stock is trending on social media",
+        scenario:
+          "A stock jumps all morning and everyone online says it is 'easy money.' You feel pressure to place a paper trade quickly so you do not miss out.",
+        difficulty: "intermediate",
+        concept: "Emotions can rush decision-making.",
+        options: [
+          {
+            id: "psy-a",
+            label: "Buy immediately because fast moves always continue.",
+            explanation:
+              "Fast moves can continue, but they can also reverse. Acting on excitement alone is a classic example of FOMO.",
+            isBest: false,
+          },
+          {
+            id: "psy-b",
+            label: "Pause and write down why the trade fits your plan before acting.",
+            explanation:
+              "Correct. A short pause creates space to separate a thoughtful decision from emotional chasing.",
+            isBest: true,
+          },
+          {
+            id: "psy-c",
+            label: "Ignore risk because it is only a small trade.",
+            explanation:
+              "Smaller size can reduce impact, but it does not remove the habit-forming effect of rushed, emotional decisions.",
+            isBest: false,
+          },
+        ],
+        takeaway: "Paper trading is a safe place to notice emotions. Good process often starts with slowing down, not speeding up.",
+      },
+      {
+        id: "strategy-timeframe",
+        category: "strategy",
+        title: "Mixing goals in one trade",
+        scenario:
+          "You tell yourself a trade is a long-term investment, but you also plan to sell the moment it moves up 2% later today.",
+        difficulty: "intermediate",
+        concept: "A strategy works best when the timeframe and exit plan match the reason for entering.",
+        options: [
+          {
+            id: "str-a",
+            label: "That is consistent because every strategy should aim to take profit as fast as possible.",
+            explanation:
+              "Different strategies use different timeframes. A long-term thesis and a same-day exit are usually based on different ideas.",
+            isBest: false,
+          },
+          {
+            id: "str-b",
+            label: "The plan is mixed because the explanation and the exit rule use different time horizons.",
+            explanation:
+              "Correct. When the reason for the trade and the planned exit disagree, it becomes harder to evaluate whether the trade actually worked.",
+            isBest: true,
+          },
+          {
+            id: "str-c",
+            label: "It does not matter as long as the stock is popular.",
+            explanation:
+              "Popularity does not replace a coherent plan. A clear timeframe helps you judge results more honestly.",
+            isBest: false,
+          },
+        ],
+        takeaway: "Strategy is easier to learn when your entry reason, time horizon, and exit rule tell the same story.",
+      },
+    ];
+  }
+
   async placeOrder(args: {
     userId: string;
     symbol: string;
