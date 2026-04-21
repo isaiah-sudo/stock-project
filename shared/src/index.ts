@@ -10,18 +10,13 @@ export interface Holding {
   currentPrice: number;
   changePct: number;
   marketValue?: number;
-<<<<<<< Updated upstream
-=======
 }
 
 export interface Quote {
   symbol: string;
   name: string;
-  currentPrice: number;
-  changePct: number;
-  source?: string;
-  asOf?: string;
->>>>>>> Stashed changes
+  price: number;
+  changePct?: number;
 }
 
 export interface Portfolio {
@@ -57,11 +52,6 @@ export interface ChatResponse {
   model: string;
 }
 
-<<<<<<< Updated upstream
-export type EducationalOrderType = "market" | "limit" | "stop";
-
-=======
->>>>>>> Stashed changes
 export interface TradePreviewRequest {
   symbol: string;
   side: "buy" | "sell";
@@ -69,13 +59,6 @@ export interface TradePreviewRequest {
   orderType?: EducationalOrderType;
   limitPrice?: number;
   stopPrice?: number;
-}
-
-<<<<<<< Updated upstream
-export interface LearningBullet {
-  label: string;
-  explanation: string;
-  tone: "good" | "caution" | "neutral";
 }
 
 export interface TradePreview {
@@ -95,7 +78,11 @@ export interface TradePreview {
   orderTypeExplanation: string;
   marketContext: string;
   beginnerSummary: string;
-  learningBullets: LearningBullet[];
+  learningBullets: Array<{
+    label: string;
+    explanation: string;
+    tone: "good" | "caution" | "neutral";
+  }>;
   warnings: string[];
 }
 
@@ -117,24 +104,10 @@ export interface PaperEducation {
   strategyTakeaway: string;
   psychologyTakeaway: string;
   lessonTags: string[];
-=======
-export interface TradePreview {
-  warnings: string[];
-  learningBullets: Array<{
-    label: string;
-    explanation: string;
-    tone: "good" | "caution" | "neutral";
-  }>;
-  estimatedPrice: number;
-  estimatedCost?: number;
-  impactAssessment?: string;
-  marketContext?: string;
->>>>>>> Stashed changes
 }
 
 export interface PaperOrderResponse {
   ok: boolean;
-<<<<<<< Updated upstream
   transaction: PaperTransaction;
   cashBalance: number;
   education: PaperEducation;
@@ -145,15 +118,6 @@ export interface LearningChallengeOption {
   label: string;
   explanation: string;
   isBest: boolean;
-=======
-  error?: string;
-  orderId?: string;
-  education: {
-    lessonTags: string[];
-    keyLearning?: string;
-    psychologyTakeaway?: string;
-  };
->>>>>>> Stashed changes
 }
 
 export interface LearningChallenge {
@@ -163,16 +127,7 @@ export interface LearningChallenge {
   scenario: string;
   difficulty: "beginner" | "intermediate" | "advanced";
   concept: string;
-<<<<<<< Updated upstream
   options: LearningChallengeOption[];
-=======
-  options: Array<{
-    id: string;
-    label: string;
-    explanation: string;
-    isBest: boolean;
-  }>;
->>>>>>> Stashed changes
   takeaway: string;
 }
 
@@ -184,23 +139,8 @@ export interface PortfolioCoaching {
   holdingsCount: number;
   styleLabel: string;
   summary: string;
-<<<<<<< Updated upstream
-  strengths: string;
-  cautions: string;
-  nextLessons: string;
-  reflectionPrompt: string;
-}
-
-export interface Quote {
-  symbol: string;
-  name: string;
-  price: number;
-  changePct?: number;
-}
-=======
   strengths: string[];
   cautions: string[];
   nextLessons: string[];
   reflectionPrompt: string;
 }
->>>>>>> Stashed changes
