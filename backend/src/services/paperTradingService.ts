@@ -1,8 +1,8 @@
-import type { Portfolio, Transaction } from "@stock/shared";
+import type { Portfolio, Transaction, LearningChallenge, PortfolioCoaching, TradePreview, TradePreviewRequest, Quote } from "@stock/shared";
 import { prisma } from "../lib/prisma.js";
 import { computePortfolioDayMetrics } from "./portfolioMetrics.js";
 
-type SupportedSymbol = 
+type SupportedSymbol =
   "AAPL" | "MSFT" | "NVDA" | "AMZN" | "GOOGL" | "TSLA" | "META" | "BRK-B" | "UNH" | "V" | 
   "JPM" | "LLY" | "AVGO" | "XOM" | "MA" | "JNJ" | "PG" | "COST" | "HD" | "ADBE" | 
   "NFLX" | "AMD" | "DIS" | "CRM" | "INTC" | "PYPL" | "VOO" | "QQQ" | "SPY" | "BABA" |
@@ -317,14 +317,14 @@ class PaperTradingService {
 
     const portfolio = portfolioResult;
 
-    const transactions = await this.getTransactions(userId);
-    const holdingsValue = portfolio.holdings.reduce((sum, holding) => sum + holding.marketValue, 0);
+    const transactions = await this.getTransactions(userId) ?? [];
+    const holdingsValue = portfolio.holdings.reduce((sum, holding) => sum + (holding.marketValue ?? holding.quantity * holding.currentPrice), 0);
     const totalValue = holdingsValue + portfolio.cashBalance;
     const concentrationPct =
       holdingsValue > 0
         ? Number(
             (
-              (Math.max(...portfolio.holdings.map((holding) => holding.marketValue), 0) / holdingsValue) *
+              (Math.max(...portfolio.holdings.map((holding) => holding.marketValue ?? holding.quantity * holding.currentPrice), 0) / holdingsValue) *
               100
             ).toFixed(1),
           )
@@ -561,7 +561,7 @@ class PaperTradingService {
     }
 
     const notional = Number((quote.currentPrice * quantity).toFixed(2));
-    const position = account.positions.find(p => p.symbol === quote.symbol);
+    const position = account.positions.find((p) => p.symbol === quote.symbol);
 
     // ✅ CHECK WHALE ACHIEVEMENT OUTSIDE TRANSACTION
     if (notional >= 10000) {
@@ -824,7 +824,8 @@ class PaperTradingService {
 
     // ✅ BATCH ALL QUOTE FETCHES for all accounts
     const allPositions = accounts.flatMap(acc => acc.positions);
-    const uniqueSymbols = Array.from(new Set(allPositions.map(p => p.symbol)));
+    const uniqueSymbolsSet = new Set<string>(allPositions.map(p => p.symbol));
+    const uniqueSymbols: string[] = Array.from(uniqueSymbolsSet);
     const quoteMap = new Map<string, LiveQuote | null>();
     
     const quotes = await Promise.all(
@@ -889,6 +890,167 @@ class PaperTradingService {
       where: { userId },
       orderBy: { unlockedAt: "desc" }
     });
+  }
+
+  private getDiversificationLabel(concentrationPct: number): string {
+    if (concentrationPct < 20) return "well diversified";
+    if (concentrationPct < 35) return "moderately concentrated";
+    if (concentrationPct < 50) return "concentrated";
+    return "highly concentrated";
+  }
+
+  private getRiskLevelFromConcentration(concentrationPct: number, totalValue: number, orderType: string): string {
+    if (concentrationPct < 25) return "low";
+    if (concentrationPct < 40) return "moderate";
+    return "high";
+  }
+
+  private buildPreviewWarnings(args: {
+    side: "buy" | "sell";
+    orderType: string;
+    estimatedNotional: number;
+    projectedCashBalance: number;
+    largestPositionSharePct: number;
+    positionQuantityBefore: number;
+    positionQuantityAfter: number;
+  }): string[] {
+    const warnings: string[] = [];
+    if (args.largestPositionSharePct > 40) {
+      warnings.push("This trade increases your concentration in a single position.");
+    }
+    if (args.side === "buy" && args.projectedCashBalance < 1000) {
+      warnings.push("Your cash balance will be very low after this trade.");
+    }
+    if (args.side === "sell" && args.positionQuantityAfter === 0) {
+      warnings.push("This trade will completely close your position in this stock.");
+    }
+    return warnings;
+  }
+
+  private getOrderTypeExplanation(orderType: string, side: "buy" | "sell"): string {
+    if (orderType === "market") {
+      return `A market order executes immediately at the current simulated price. For a ${side} order, this means you accept the prevailing market quote.`;
+    }
+    if (orderType === "limit") {
+      return `A limit order sets a price condition. For a ${side}, you specify the maximum price you're willing to pay (buy) or minimum you'll accept (sell).`;
+    }
+    return `A stop order becomes active only after a trigger price is reached. It helps manage risk by automating entry or exit decisions.`;
+  }
+
+  private getPreviewSummary(args: {
+    side: "buy" | "sell";
+    quantity: number;
+    symbol: string;
+    estimatedNotional: number;
+    projectedCashBalance: number;
+    orderType: string;
+  }): string {
+    const action = args.side === "buy" ? "buying" : "selling";
+    return `You are considering ${action} ${args.quantity} shares of ${args.symbol} for an estimated ${args.side === "buy" ? "cost" : "proceeds"} of $${args.estimatedNotional.toFixed(2)}. After this trade, your cash balance would be $${args.projectedCashBalance.toFixed(2)}.`;
+  }
+
+  private buildLearningBullets(args: {
+    side: "buy" | "sell";
+    orderType: string;
+    diversificationLabel: string;
+    largestPositionSharePct: number;
+    projectedCashBalance: number;
+    currentCashBalance: number;
+  }): Array<{ label: string; explanation: string; tone: "good" | "caution" | "neutral" }> {
+    const bullets: Array<{ label: string; explanation: string; tone: "good" | "caution" | "neutral" }> = [];
+
+    if (args.diversificationLabel.includes("diversified")) {
+      bullets.push({
+        label: "Diversification looks good",
+        explanation: "Your portfolio spread appears balanced. This trade maintains reasonable diversification.",
+        tone: "good"
+      });
+    } else if (args.diversificationLabel.includes("concentrated")) {
+      bullets.push({
+        label: "Concentration risk",
+        explanation: "A large portion of your portfolio is in one position. Consider whether this aligns with your risk tolerance.",
+        tone: "caution"
+      });
+    }
+
+    const cashRatio = args.projectedCashBalance / (args.currentCashBalance || 1);
+    if (cashRatio < 0.1) {
+      bullets.push({
+        label: "Low cash reserve",
+        explanation: "You'll have very little cash left after this trade. Keeping some cash provides flexibility for future opportunities.",
+        tone: "caution"
+      });
+    }
+
+    bullets.push({
+      label: `${args.orderType.charAt(0).toUpperCase() + args.orderType.slice(1)} order insight`,
+      explanation: args.orderType === "market"
+        ? "Market orders prioritize speed over price certainty. You'll get the current simulated price."
+        : "This order type adds a price condition, giving you more control but no execution guarantee.",
+      tone: "neutral"
+    });
+
+    return bullets;
+  }
+
+  private getStyleLabel(args: {
+    concentrationPct: number;
+    cashPct: number;
+    recentTradeCount: number;
+    holdingsCount: number;
+  }): string {
+    if (args.recentTradeCount > 20) return "active trader";
+    if (args.concentrationPct > 40) return "stock picker";
+    if (args.cashPct > 50) return "conservative";
+    if (args.holdingsCount >= 5) return "diversified investor";
+    return "builder";
+  }
+
+  private getCoachingSummary(styleLabel: string, diversificationLabel: string, cashPct: number, recentTradeCount: number): string {
+    return `Your portfolio style is "${styleLabel}" with ${diversificationLabel} holdings. You have ${cashPct.toFixed(1)}% in cash and made ${recentTradeCount} recent trades. This suggests a ${cashPct > 30 ? "cautious" : "committed"} approach to the market.`;
+  }
+
+  private getCoachingStrengths(holdingsCount: number, diversificationLabel: string, cashPct: number): string {
+    if (holdingsCount >= 5 && diversificationLabel.includes("diversified")) {
+      return "Strong diversification across multiple positions reduces single-stock risk.";
+    }
+    if (cashPct > 20) {
+      return "Healthy cash reserves provide flexibility to act on new opportunities or weather downturns.";
+    }
+    return "Your portfolio shows commitment to your investment convictions.";
+  }
+
+  private getCoachingCautions(concentrationPct: number, cashPct: number, recentTradeCount: number): string {
+    if (concentrationPct > 40) {
+      return "High concentration in one position amplifies both gains and losses. Consider whether this matches your risk tolerance.";
+    }
+    if (recentTradeCount > 30) {
+      return "Frequent trading can erode returns through timing mistakes. Consider a more deliberate approach.";
+    }
+    if (cashPct > 60) {
+      return "High cash levels may indicate missed opportunities. Consider deploying capital strategically.";
+    }
+    return "Continue monitoring your portfolio balance and adjust as your goals evolve.";
+  }
+
+  private getNextLessons(styleLabel: string, diversificationLabel: string, recentTradeCount: number): string {
+    if (diversificationLabel.includes("concentrated")) {
+      return "Learn about diversification strategies and position sizing to reduce concentration risk.";
+    }
+    if (recentTradeCount > 20) {
+      return "Study the impact of trading frequency on long-term returns and the benefits of patience.";
+    }
+    return "Explore sector allocation and risk management techniques to refine your strategy.";
+  }
+
+  private getReflectionPrompt(styleLabel: string, concentrationPct: number, cashPct: number): string {
+    if (concentrationPct > 40) {
+      return "What would happen to your portfolio if your largest holding dropped 20% tomorrow? Is that acceptable?";
+    }
+    if (cashPct > 50) {
+      return "What's holding you back from deploying your cash? Are you waiting for the perfect moment?";
+    }
+    return "Review your recent trades: which decisions were based on research versus emotion? What patterns do you notice?";
   }
 }
 

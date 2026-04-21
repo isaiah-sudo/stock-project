@@ -84,9 +84,9 @@ export function PortfolioCoachCard({ coaching }: { coaching: PortfolioCoaching }
       </div>
 
       <div className="mt-6 grid gap-4 lg:grid-cols-3">
-        {renderList("Strengths", coaching.strengths, "border-emerald-200 bg-emerald-50 text-emerald-950")}
-        {renderList("Cautions", coaching.cautions, "border-amber-200 bg-amber-50 text-amber-950")}
-        {renderList("Next lessons", coaching.nextLessons, "border-sky-200 bg-sky-50 text-sky-950")}
+        {renderList("Strengths", [coaching.strengths], "border-emerald-200 bg-emerald-50 text-emerald-950")}
+        {renderList("Cautions", [coaching.cautions], "border-amber-200 bg-amber-50 text-amber-950")}
+        {renderList("Next lessons", [coaching.nextLessons], "border-sky-200 bg-sky-50 text-sky-950")}
       </div>
 
       <div className="mt-6 rounded-2xl border border-slate-200 bg-slate-50 p-5">
