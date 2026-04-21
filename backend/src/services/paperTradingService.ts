@@ -1,4 +1,8 @@
+<<<<<<< Updated upstream
 import type { Portfolio, Transaction, LearningChallenge, PortfolioCoaching, TradePreview, TradePreviewRequest, Quote } from "@stock/shared";
+=======
+import type { Portfolio, Transaction, Quote, TradePreview, TradePreviewRequest, PortfolioCoaching, LearningChallenge } from "@stock/shared";
+>>>>>>> Stashed changes
 import { prisma } from "../lib/prisma.js";
 import { computePortfolioDayMetrics } from "./portfolioMetrics.js";
 
@@ -16,17 +20,8 @@ interface Position {
   averageCost: number;
 }
 
-interface LiveQuote {
-  symbol: SupportedSymbol;
-  name: string;
-  currentPrice: number;
-  changePct: number;
-  source?: string;
-  asOf?: string;
-}
-
 interface CachedQuote {
-  quote: LiveQuote;
+  quote: Quote & { symbol: SupportedSymbol };
   cachedAt: number;
 }
 
@@ -152,7 +147,7 @@ class PaperTradingService {
     return account?.linked === true;
   }
 
-  private getSyntheticQuote(symbol: SupportedSymbol): LiveQuote {
+  private getSyntheticQuote(symbol: SupportedSymbol): Quote & { symbol: SupportedSymbol } {
     const meta = SYMBOL_META[symbol];
     const drift = Math.sin(Date.now() / 1000 / 60 + symbol.charCodeAt(0)) * 0.015;
     const currentPrice = Number((meta.basePrice * (1 + drift)).toFixed(2));
@@ -160,7 +155,7 @@ class PaperTradingService {
     return { symbol, name: meta.name, currentPrice, changePct };
   }
 
-  async getQuote(symbol: string): Promise<LiveQuote | null> {
+  async getQuote(symbol: string): Promise<(Quote & { symbol: SupportedSymbol }) | null> {
     const normalized = symbol.toUpperCase() as SupportedSymbol;
     if (!SUPPORTED_SYMBOLS.includes(normalized)) return null;
 
@@ -185,7 +180,7 @@ class PaperTradingService {
       if (!data.currentPrice || data.currentPrice <= 0) {
         throw new Error("Missing live quote price");
       }
-      const quote: LiveQuote = {
+      const quote: Quote & { symbol: SupportedSymbol } = {
         symbol: normalized,
         name: data.name ?? SYMBOL_META[normalized].name,
         currentPrice: Number(data.currentPrice.toFixed(2)),
@@ -226,7 +221,7 @@ class PaperTradingService {
 
     const currentPosition = portfolio.holdings.find((holding) => holding.symbol === normalizedSymbol);
     const positionQuantityBefore = currentPosition?.quantity ?? 0;
-    const estimatedPrice = quote.price;
+    const estimatedPrice = quote.currentPrice;
     const estimatedNotional = Number((estimatedPrice * input.quantity).toFixed(2));
     const projectedCashBalance = Number(
       (
@@ -892,6 +887,7 @@ class PaperTradingService {
     });
   }
 
+<<<<<<< Updated upstream
   private getDiversificationLabel(concentrationPct: number): string {
     if (concentrationPct < 20) return "well diversified";
     if (concentrationPct < 35) return "moderately concentrated";
@@ -907,6 +903,25 @@ class PaperTradingService {
 
   private buildPreviewWarnings(args: {
     side: "buy" | "sell";
+=======
+  // Helper methods for portfolio analysis and trading previews
+  private getDiversificationLabel(concentrationPct: number): string {
+    if (concentrationPct > 70) return "Highly concentrated";
+    if (concentrationPct > 50) return "Somewhat concentrated";
+    if (concentrationPct > 30) return "Moderately diversified";
+    return "Well diversified";
+  }
+
+  private getRiskLevelFromConcentration(concentrationPct: number, totalValue: number, context: string): string {
+    if (concentrationPct > 70) return "high";
+    if (concentrationPct > 50) return "moderate-high";
+    if (concentrationPct > 30) return "moderate";
+    return "low";
+  }
+
+  private buildPreviewWarnings(args: {
+    side: string;
+>>>>>>> Stashed changes
     orderType: string;
     estimatedNotional: number;
     projectedCashBalance: number;
@@ -915,6 +930,7 @@ class PaperTradingService {
     positionQuantityAfter: number;
   }): string[] {
     const warnings: string[] = [];
+<<<<<<< Updated upstream
     if (args.largestPositionSharePct > 40) {
       warnings.push("This trade increases your concentration in a single position.");
     }
@@ -923,10 +939,21 @@ class PaperTradingService {
     }
     if (args.side === "sell" && args.positionQuantityAfter === 0) {
       warnings.push("This trade will completely close your position in this stock.");
+=======
+    if (args.largestPositionSharePct > 50) {
+      warnings.push("This trade would create a concentrated position. A single large position carries higher risk.");
+    }
+    if (args.projectedCashBalance < 1000) {
+      warnings.push("Your cash balance would become very low. Consider leaving reserve cash for opportunities.");
+    }
+    if (args.side === "sell" && args.positionQuantityAfter === 0) {
+      warnings.push("This trade would exit your entire position in this stock. Make sure that is intentional.");
+>>>>>>> Stashed changes
     }
     return warnings;
   }
 
+<<<<<<< Updated upstream
   private getOrderTypeExplanation(orderType: string, side: "buy" | "sell"): string {
     if (orderType === "market") {
       return `A market order executes immediately at the current simulated price. For a ${side} order, this means you accept the prevailing market quote.`;
@@ -939,18 +966,40 @@ class PaperTradingService {
 
   private getPreviewSummary(args: {
     side: "buy" | "sell";
+=======
+  private getOrderTypeExplanation(orderType: string, side: string): string {
+    if (orderType === "limit") {
+      return side === "buy" ? "Your limit price sets the maximum you are willing to pay." : "Your limit price sets the minimum you want to receive.";
+    }
+    if (orderType === "stop") {
+      return side === "buy" ? "Your stop price becomes an order if the market reaches it." : "Your stop price becomes an order if the market falls to it.";
+    }
+    return "A market order fills immediately at the current simulated price.";
+  }
+
+  private getPreviewSummary(args: {
+    side: string;
+>>>>>>> Stashed changes
     quantity: number;
     symbol: string;
     estimatedNotional: number;
     projectedCashBalance: number;
     orderType: string;
   }): string {
+<<<<<<< Updated upstream
     const action = args.side === "buy" ? "buying" : "selling";
     return `You are considering ${action} ${args.quantity} shares of ${args.symbol} for an estimated ${args.side === "buy" ? "cost" : "proceeds"} of $${args.estimatedNotional.toFixed(2)}. After this trade, your cash balance would be $${args.projectedCashBalance.toFixed(2)}.`;
   }
 
   private buildLearningBullets(args: {
     side: "buy" | "sell";
+=======
+    return `You are previewing a ${args.side} order for ${args.quantity} shares of ${args.symbol} estimated at $${args.estimatedNotional.toFixed(2)}. Your cash would be $${args.projectedCashBalance.toFixed(2)} after.`;
+  }
+
+  private buildLearningBullets(args: {
+    side: string;
+>>>>>>> Stashed changes
     orderType: string;
     diversificationLabel: string;
     largestPositionSharePct: number;
@@ -958,6 +1007,7 @@ class PaperTradingService {
     currentCashBalance: number;
   }): Array<{ label: string; explanation: string; tone: "good" | "caution" | "neutral" }> {
     const bullets: Array<{ label: string; explanation: string; tone: "good" | "caution" | "neutral" }> = [];
+<<<<<<< Updated upstream
 
     if (args.diversificationLabel.includes("diversified")) {
       bullets.push({
@@ -990,6 +1040,27 @@ class PaperTradingService {
       tone: "neutral"
     });
 
+=======
+    
+    bullets.push({
+      label: "Diversification insight",
+      explanation: `After this trade, your portfolio would be ${args.diversificationLabel}. Lower concentration can reduce risk.`,
+      tone: args.largestPositionSharePct > 50 ? "caution" : "good"
+    });
+
+    bullets.push({
+      label: "Order type focus",
+      explanation: `${args.orderType.charAt(0).toUpperCase() + args.orderType.slice(1)} orders are best for learning different trading strategies.`,
+      tone: "neutral"
+    });
+
+    bullets.push({
+      label: "Cash management",
+      explanation: `Keeping some cash available lets you respond to new opportunities. Your projected cash: $${args.projectedCashBalance.toFixed(2)}.`,
+      tone: args.projectedCashBalance < 5000 ? "caution" : "good"
+    });
+
+>>>>>>> Stashed changes
     return bullets;
   }
 
@@ -999,6 +1070,7 @@ class PaperTradingService {
     recentTradeCount: number;
     holdingsCount: number;
   }): string {
+<<<<<<< Updated upstream
     if (args.recentTradeCount > 20) return "active trader";
     if (args.concentrationPct > 40) return "stock picker";
     if (args.cashPct > 50) return "conservative";
@@ -1051,6 +1123,49 @@ class PaperTradingService {
       return "What's holding you back from deploying your cash? Are you waiting for the perfect moment?";
     }
     return "Review your recent trades: which decisions were based on research versus emotion? What patterns do you notice?";
+=======
+    if (args.recentTradeCount > 10) return "Active trader";
+    if (args.concentrationPct > 70) return "Concentrated investor";
+    if (args.cashPct > 50) return "Conservative holder";
+    if (args.holdingsCount > 10) return "Diversifier";
+    return "Balanced investor";
+  }
+
+  private getCoachingSummary(styleLabel: string, diversificationLabel: string, cashPct: number, recentTradeCount: number): string {
+    return `Your portfolio style is "${styleLabel}" with a ${diversificationLabel} structure. You hold ${cashPct.toFixed(1)}% in cash and have made ${recentTradeCount} trades in the last 2 weeks.`;
+  }
+
+  private getCoachingStrengths(holdingsCount: number, diversificationLabel: string, cashPct: number): string[] {
+    const strengths: string[] = [];
+    if (holdingsCount >= 5) strengths.push("You have a good number of holdings for a learning portfolio.");
+    if (diversificationLabel.includes("Well") || diversificationLabel.includes("Moderately")) strengths.push("Your concentration is healthy for learning.");
+    if (cashPct >= 20) strengths.push("You maintain reserve cash, which is prudent.");
+    if (strengths.length === 0) strengths.push("Every portfolio is unique—focus on your learning goals.");
+    return strengths;
+  }
+
+  private getCoachingCautions(concentrationPct: number, cashPct: number, recentTradeCount: number): string[] {
+    const cautions: string[] = [];
+    if (concentrationPct > 70) cautions.push("High concentration can amplify losses. Consider diversifying.");
+    if (cashPct < 10) cautions.push("Very low cash may limit future opportunities.");
+    if (recentTradeCount > 20) cautions.push("Frequent trading can feel exciting but check your conviction for each trade.");
+    return cautions;
+  }
+
+  private getNextLessons(styleLabel: string, diversificationLabel: string, recentTradeCount: number): string[] {
+    const lessons: string[] = [];
+    if (styleLabel === "Active trader") lessons.push("Consider why you trade often—is each trade part of a plan?");
+    if (diversificationLabel.includes("concentrated")) lessons.push("Learn how sector rotation and diversification reduce risk.");
+    if (recentTradeCount === 0) lessons.push("Try placing a paper trade to practice order types.");
+    return lessons.length > 0 ? lessons : ["Keep learning through our scenario-based challenges."];
+  }
+
+  private getReflectionPrompt(styleLabel: string, concentrationPct: number, cashPct: number): string {
+    if (styleLabel === "Active trader") return "What is your plan for each trade you make?";
+    if (concentrationPct > 50) return "How would your portfolio react if your largest position dropped 20%?";
+    if (cashPct < 20) return "Why do you hold very little cash? What opportunities might you miss?";
+    return "How do your recent trades reflect your investment philosophy?";
+>>>>>>> Stashed changes
   }
 }
 

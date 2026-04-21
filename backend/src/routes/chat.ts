@@ -20,15 +20,20 @@ router.post("/", requireAuth, async (req: AuthRequest, res) => {
     return res.status(400).json({ error: parsed.error.flatten() });
   }
 
-  const model = parsed.data.model ?? process.env.OLLAMA_DEFAULT_MODEL ?? "llama3";
-  const portfolio = await brokerageService.getPortfolio(req.user!.userId);
-  const aiResult = await queryOllama({
-    model,
-    userMessage: parsed.data.message,
-    portfolio
-  });
+  try {
+    const model = parsed.data.model ?? process.env.OLLAMA_DEFAULT_MODEL ?? "llama3";
+    const portfolio = await brokerageService.getPortfolio(req.user!.userId);
+    const aiResult = await queryOllama({
+      model,
+      userMessage: parsed.data.message,
+      portfolio
+    });
 
-  return res.json(aiResult);
+    return res.json(aiResult);
+  } catch (err) {
+    console.error("Chat error:", err);
+    return res.status(500).json({ error: "Failed to process chat message" });
+  }
 });
 
 export default router;

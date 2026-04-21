@@ -34,12 +34,13 @@ export function ChatAssistant() {
         body: JSON.stringify({ message: userText, accountId: "demo-account", model })
       });
       setMessages([...next, { role: "assistant", text: data.reply }]);
-    } catch {
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : "Unknown error";
       setMessages([
         ...next,
         {
           role: "assistant",
-          text: "I could not generate a response. Check backend connectivity and Ollama status."
+          text: `I could not generate a response: ${errorMessage}. Check backend connectivity and Ollama status.`
         }
       ]);
     } finally {

@@ -30,9 +30,10 @@ export function AuthForm() {
       localStorage.setItem("token", data.token);
       router.push("/dashboard");
     } catch (err: any) {
+      const errorMessage = err instanceof Error ? err.message : "Authentication failed";
       console.error("Auth error:", err);
-      setError(err.message);
-      trackEvent("auth_error_catch", { error: err.message });
+      setError(errorMessage);
+      trackEvent("auth_error_catch", { error: errorMessage });
     } finally {
       setLoading(false);
     }

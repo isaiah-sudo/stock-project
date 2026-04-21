@@ -491,7 +491,7 @@ export function PaperTradingPanel({
                 <div className="rounded-2xl border border-amber-200 bg-amber-50 p-5">
                   <h4 className="text-base font-semibold text-amber-950">Warnings to read before you trade</h4>
                   <ul className="mt-3 space-y-2 text-sm text-amber-900">
-                    {preview.warnings.map((warning) => (
+                    {preview.warnings.map((warning: string) => (
                       <li key={warning} className="flex items-start gap-2">
                         <span className="mt-0.5 font-bold" aria-hidden="true">
                           !
@@ -506,7 +506,7 @@ export function PaperTradingPanel({
               <div>
                 <h4 className="text-base font-semibold text-slate-950">Learning bullets</h4>
                 <div className="mt-3 grid gap-3">
-                  {preview.learningBullets.map((bullet) => (
+                  {preview.learningBullets.map((bullet: { label: string; explanation: string; tone: "good" | "caution" | "neutral" }) => (
                     <div
                       key={`${bullet.label}-${bullet.explanation}`}
                       className={`rounded-xl border p-4 ${getToneClasses(bullet.tone)}`}
@@ -601,7 +601,7 @@ export function PaperTradingPanel({
 
             {orderResult.education.lessonTags.length > 0 ? (
               <div className="mt-4 flex flex-wrap gap-2">
-                {orderResult.education.lessonTags.map((tag) => (
+                {orderResult.education.lessonTags.map((tag: string) => (
                   <span
                     key={tag}
                     className="rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-xs font-medium text-slate-700"

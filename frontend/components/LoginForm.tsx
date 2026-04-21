@@ -12,47 +12,43 @@ export function LoginForm() {
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 
-  async function onSubmit(e: React.FormEvent) {
-    e.preventDefault();
+  async function performLogin(loginEmail: string, loginPassword: string, isDemoLogin: boolean = false) {
     setLoading(true);
     setError("");
     try {
       const response = await fetch(`${API_BASE}/auth/login`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, password })
+        body: JSON.stringify({ email: loginEmail, password: loginPassword })
       });
-      if (!response.ok) throw new Error("Invalid credentials");
+      
+      if (!response.ok) {
+        const errorData = (await response.json()) as { error?: string };
+        throw new Error(errorData?.error || `Login failed with status ${response.status}`);
+      }
+      
       const data = (await response.json()) as { token: string };
       localStorage.setItem("token", data.token);
       router.push("/dashboard");
-    } catch {
-      setError("Login failed. Use demo@example.com / password123.");
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : "Login failed";
+      if (isDemoLogin) {
+        setError(`Demo login failed: ${errorMessage}. Check that the backend server is running and accessible.`);
+      } else {
+        setError(errorMessage);
+      }
     } finally {
       setLoading(false);
     }
   }
 
+  async function onSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    await performLogin(email, password);
+  }
+
   async function useDemoLogin() {
-    setEmail("demo@example.com");
-    setPassword("password123");
-    setLoading(true);
-    setError("");
-    try {
-      const response = await fetch(`${API_BASE}/auth/login`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email: "demo@example.com", password: "password123" })
-      });
-      if (!response.ok) throw new Error("Invalid credentials");
-      const data = (await response.json()) as { token: string };
-      localStorage.setItem("token", data.token);
-      router.push("/dashboard");
-    } catch {
-      setError("Demo login failed. Check that the backend server is running and accessible.");
-    } finally {
-      setLoading(false);
-    }
+    await performLogin("demo@example.com", "password123", true);
   }
 
   return (

@@ -7,13 +7,23 @@ const router = Router();
 const brokerageService = new BrokerageService();
 
 router.get("/", requireAuth, async (req: AuthRequest, res) => {
-  const portfolio = await brokerageService.getPortfolio(req.user!.userId);
-  return res.json(portfolio);
+  try {
+    const portfolio = await brokerageService.getPortfolio(req.user!.userId);
+    return res.json(portfolio);
+  } catch (err) {
+    console.error("Portfolio fetch error:", err);
+    return res.status(500).json({ error: "Failed to fetch portfolio" });
+  }
 });
 
 router.get("/transactions", requireAuth, async (req: AuthRequest, res) => {
-  const transactions = await brokerageService.getTransactions(req.user!.userId);
-  return res.json(transactions);
+  try {
+    const transactions = await brokerageService.getTransactions(req.user!.userId);
+    return res.json(transactions);
+  } catch (err) {
+    console.error("Transactions fetch error:", err);
+    return res.status(500).json({ error: "Failed to fetch transactions" });
+  }
 });
 
 export default router;

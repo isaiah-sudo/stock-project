@@ -51,9 +51,14 @@ router.post("/webull/callback", requireAuth, async (req: AuthRequest, res) => {
     return res.status(400).json({ error: parsed.error.flatten() });
   }
 
-  const tokens = await brokerageService.exchangeWebullCodeForTokens(parsed.data.code);
-  // TODO: Encrypt and persist tokens with user linkage.
-  return res.json({ linked: true, provider: "webull", tokenExpiry: tokens.expiresAt });
+  try {
+    const tokens = await brokerageService.exchangeWebullCodeForTokens(parsed.data.code);
+    // TODO: Encrypt and persist tokens with user linkage.
+    return res.json({ linked: true, provider: "webull", tokenExpiry: tokens.expiresAt });
+  } catch (err) {
+    console.error("Webull callback error:", err);
+    return res.status(400).json({ error: "Failed to exchange Webull authorization code" });
+  }
 });
 
 const mockLinkSchema = z.object({

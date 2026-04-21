@@ -38,8 +38,6 @@ Production-ready starter for a beginner paper trading stock game app:
    - `npm run dev`
 6. Run all services in one command:
    - `npm run start:all`
-7. Run live quote service (Python):
-   - `npm run dev:quotes`
 
 ## Live Quote Provider
 - **Primary:** Alpha Vantage (if `ALPHA_VANTAGE_API_KEY` is set in your environment)
