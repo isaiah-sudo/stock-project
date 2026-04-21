@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { getDefaultRouteForMode, getMode } from "../lib/appMode";
 
 const API_BASE = process.env.NEXT_PUBLIC_API_BASE_URL ?? "http://localhost:4000/api";
 
@@ -25,7 +26,6 @@ export function LoginForm() {
       if (!response.ok) {
         const errorData = (await response.json()) as { error?: string };
         throw new Error(errorData?.error || `Login failed with status ${response.status}`);
-      }
       
       const data = (await response.json()) as { token: string };
       localStorage.setItem("token", data.token);
@@ -36,20 +36,15 @@ export function LoginForm() {
         setError(`Demo login failed: ${errorMessage}. Check that the backend server is running and accessible.`);
       } else {
         setError(errorMessage);
-      }
     } finally {
       setLoading(false);
-    }
-  }
 
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
     await performLogin(email, password);
-  }
 
   async function useDemoLogin() {
     await performLogin("demo@example.com", "password123", true);
-  }
 
   return (
     <form onSubmit={onSubmit} className="space-y-4 rounded-2xl bg-white p-6 shadow">
@@ -86,4 +81,3 @@ export function LoginForm() {
       </button>
     </form>
   );
-}

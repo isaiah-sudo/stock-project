@@ -49,24 +49,24 @@ export function ChatAssistant() {
   }
 
   return (
-    <div className="rounded-2xl bg-white p-4 shadow">
-      <div className="mb-3 flex items-center justify-between">
-        <h3 className="text-lg font-semibold">AI Chat Assistant</h3>
+    <div className="flex h-full flex-col rounded-2xl bg-white p-3 shadow sm:p-4">
+      <div className="mb-3 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between flex-shrink-0">
+        <h3 className="text-base font-semibold sm:text-lg">AI Chat Assistant</h3>
         <input
           value={model}
           onChange={(e) => setModel(e.target.value)}
-          className="w-28 rounded-lg border border-slate-200 px-2 py-1 text-sm"
+          className="w-full rounded-lg border border-slate-200 px-2 py-1 text-sm sm:w-28"
           aria-label="Ollama model"
         />
       </div>
-      <div className="mb-3 h-64 space-y-2 overflow-y-auto rounded-lg bg-slate-50 p-2">
+      <div className="flex-1 min-h-0 mb-3 space-y-2 overflow-y-auto rounded-lg bg-slate-50 p-2">
         {messages.map((m, idx) => (
           <div key={idx} className={m.role === "user" ? "text-right" : "text-left"}>
             <span
               className={
                 m.role === "user"
-                  ? "inline-block rounded-xl bg-slate-900 px-3 py-2 text-sm text-white"
-                  : "inline-block rounded-xl bg-white px-3 py-2 text-sm text-slate-800 shadow"
+                  ? "inline-block max-w-full break-words rounded-xl bg-slate-900 px-3 py-2 text-sm text-white sm:max-w-[85%]"
+                  : "inline-block max-w-full break-words rounded-xl bg-white px-3 py-2 text-sm text-slate-800 shadow sm:max-w-[85%]"
               }
             >
               {m.text}
@@ -74,7 +74,7 @@ export function ChatAssistant() {
           </div>
         ))}
       </div>
-      <div className="flex gap-2">
+      <div className="flex flex-col gap-2 sm:flex-row flex-shrink-0">
         <input
           value={input}
           onChange={(e) => setInput(e.target.value)}
@@ -84,7 +84,7 @@ export function ChatAssistant() {
         <button
           onClick={sendMessage}
           disabled={loading}
-          className="rounded-xl bg-indigo-600 px-4 py-2 text-white"
+          className="w-full rounded-xl bg-indigo-600 px-4 py-2 text-white sm:w-auto"
         >
           {loading ? "..." : "Send"}
         </button>
