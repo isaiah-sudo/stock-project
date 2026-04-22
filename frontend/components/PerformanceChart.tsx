@@ -18,26 +18,26 @@ export function PerformanceChart({ portfolio }: { portfolio: Portfolio }) {
   const chartData = useMemo(() => {
     const marketValue = totalValue - (portfolio.cashBalance ?? 0);
     const startValue = marketValue - dayChangeDollar;
-    const now = Date.now();
-    const dataPoints = 24;
-    const startTime = now - 8 * 60 * 60 * 1000; // Last 8 hours
+    const end = new Date();
+    end.setMinutes(0, 0, 0);
+    const endTime = end.getTime();
+    const startTime = endTime - 8 * 60 * 60 * 1000; // Last 8 hours exactly
+    const dataPoints = 49; // Every 10 minutes (8 * 6 + 1)
 
     return Array.from({ length: dataPoints }, (_, i) => {
       const timeFraction = i / (dataPoints - 1);
-      const timestamp = startTime + timeFraction * (now - startTime);
+      const timestamp = startTime + timeFraction * (endTime - startTime);
       
       // Interpolated baseline
       const linearValue = startValue + (marketValue - startValue) * timeFraction;
       
       // Sharp movements and volatility
-      // We use multiple sine waves and random jumps for a realistic feel
       const noise = (
         Math.sin(timeFraction * 12) * 0.008 + 
         Math.sin(timeFraction * 25) * 0.004 + 
         (Math.random() - 0.5) * 0.015
-      ) * (marketValue || 1000); // Use a baseline if marketValue is 0
+      ) * (marketValue || 1000);
       
-      // Ensure it starts exactly at startValue and ends exactly at marketValue
       const envelope = Math.sin(timeFraction * Math.PI);
       const value = linearValue + (noise * envelope);
 
