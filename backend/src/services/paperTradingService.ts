@@ -6,8 +6,13 @@ type SupportedSymbol =
   "AAPL" | "MSFT" | "NVDA" | "AMZN" | "GOOGL" | "TSLA" | "META" | "BRK-B" | "UNH" | "V" | 
   "JPM" | "LLY" | "AVGO" | "XOM" | "MA" | "JNJ" | "PG" | "COST" | "HD" | "ADBE" | 
   "NFLX" | "AMD" | "DIS" | "CRM" | "INTC" | "PYPL" | "VOO" | "QQQ" | "SPY" | "BABA" |
-  "PLTR" | "SOFI" | "U" | "SNOW" | "CRWD" | "NKE" | "SBUX" | "TGT" | "WMT" | "CVX" |
-  "CAT" | "DE" | "GS" | "MS" | "SQ" | "COIN" | "SCHD" | "VTI" | "VT" | "GME" | "AMC" | "MSTR";
+  "WMT" | "KO" | "PEP" | "ORCL" | "BAC" | "WFC" | "CSCO" | "CVX" | "MRK" | "PFE" |
+  "ABBV" | "T" | "VZ" | "CMCSA" | "CAT" | "BA" | "IBM" | "HON" | "GE" | "LOW" |
+  "MCD" | "SBUX" | "UBER" | "ABNB" | "PLTR" | "QCOM" | "TXN" | "TMUS" | "AMGN" | "GS" |
+  "SHOP" | "SNOW" | "NET" | "DDOG" | "OKTA" | "CRWD" | "ZS" | "TEAM" | "MDB" | "PANW" |
+  "SQ" | "MSTR" | "COIN" | "HOOD" | "AFRM" | "UPST" | "SOFI" | "NKE" | "LULU" | "TGT" |
+  "TJX" | "VRTX" | "REGN" | "ISRG" | "TM" | "NIO" | "LI" | "XPEV" | "UPS" | "FDX" |
+  "LMT" | "RTX" | "DE" | "SCHW" | "BLK" | "MS" | "AXP" | "C" | "USB" | "U" | "SCHD" | "VTI" | "VT" | "GME" | "AMC";
 
 interface Position {
   symbol: SupportedSymbol;
@@ -61,28 +66,81 @@ const SYMBOL_META: Record<SupportedSymbol, { name: string; basePrice: number }> 
   QQQ: { name: "Invesco QQQ Trust", basePrice: 440 },
   SPY: { name: "SPDR S&P 500 ETF Trust", basePrice: 515 },
   BABA: { name: "Alibaba Group Holding Ltd.", basePrice: 75 },
-  PLTR: { name: "Palantir Technologies Inc.", basePrice: 24 },
-  SOFI: { name: "SoFi Technologies Inc.", basePrice: 8 },
-  U: { name: "Unity Software Inc.", basePrice: 30 },
-  SNOW: { name: "Snowflake Inc.", basePrice: 160 },
-  CRWD: { name: "CrowdStrike Holdings Inc.", basePrice: 320 },
-  NKE: { name: "Nike Inc.", basePrice: 95 },
-  SBUX: { name: "Starbucks Corp.", basePrice: 88 },
-  TGT: { name: "Target Corp.", basePrice: 170 },
   WMT: { name: "Walmart Inc.", basePrice: 60 },
+  KO: { name: "Coca-Cola Co.", basePrice: 60 },
+  PEP: { name: "PepsiCo Inc.", basePrice: 170 },
+  ORCL: { name: "Oracle Corp.", basePrice: 120 },
+  BAC: { name: "Bank of America Corp.", basePrice: 35 },
+  WFC: { name: "Wells Fargo & Co.", basePrice: 55 },
+  CSCO: { name: "Cisco Systems Inc.", basePrice: 50 },
   CVX: { name: "Chevron Corp.", basePrice: 155 },
+  MRK: { name: "Merck & Co. Inc.", basePrice: 130 },
+  PFE: { name: "Pfizer Inc.", basePrice: 28 },
+  ABBV: { name: "AbbVie Inc.", basePrice: 170 },
+  T: { name: "AT&T Inc.", basePrice: 17 },
+  VZ: { name: "Verizon Communications Inc.", basePrice: 40 },
+  CMCSA: { name: "Comcast Corp.", basePrice: 40 },
   CAT: { name: "Caterpillar Inc.", basePrice: 350 },
-  DE: { name: "Deere & Co.", basePrice: 390 },
+  BA: { name: "Boeing Co.", basePrice: 180 },
+  IBM: { name: "IBM Corp.", basePrice: 190 },
+  HON: { name: "Honeywell International Inc.", basePrice: 200 },
+  GE: { name: "General Electric Co.", basePrice: 150 },
+  LOW: { name: "Lowe's Companies Inc.", basePrice: 230 },
+  MCD: { name: "McDonald's Corp.", basePrice: 280 },
+  SBUX: { name: "Starbucks Corp.", basePrice: 88 },
+  UBER: { name: "Uber Technologies Inc.", basePrice: 70 },
+  ABNB: { name: "Airbnb Inc.", basePrice: 160 },
+  PLTR: { name: "Palantir Technologies Inc.", basePrice: 24 },
+  QCOM: { name: "QUALCOMM Inc.", basePrice: 170 },
+  TXN: { name: "Texas Instruments Inc.", basePrice: 170 },
+  TMUS: { name: "T-Mobile US Inc.", basePrice: 160 },
+  AMGN: { name: "Amgen Inc.", basePrice: 270 },
   GS: { name: "Goldman Sachs Group Inc.", basePrice: 410 },
-  MS: { name: "Morgan Stanley", basePrice: 90 },
+  SHOP: { name: "Shopify Inc.", basePrice: 75 },
+  SNOW: { name: "Snowflake Inc.", basePrice: 160 },
+  NET: { name: "Cloudflare Inc.", basePrice: 100 },
+  DDOG: { name: "Datadog Inc.", basePrice: 120 },
+  OKTA: { name: "Okta Inc.", basePrice: 100 },
+  CRWD: { name: "CrowdStrike Holdings Inc.", basePrice: 320 },
+  ZS: { name: "Zscaler Inc.", basePrice: 200 },
+  TEAM: { name: "Atlassian Corp.", basePrice: 200 },
+  MDB: { name: "MongoDB Inc.", basePrice: 350 },
+  PANW: { name: "Palo Alto Networks Inc.", basePrice: 300 },
   SQ: { name: "Block Inc.", basePrice: 75 },
+  MSTR: { name: "MicroStrategy Inc.", basePrice: 1600 },
   COIN: { name: "Coinbase Global Inc.", basePrice: 250 },
+  HOOD: { name: "Robinhood Markets Inc.", basePrice: 20 },
+  AFRM: { name: "Affirm Holdings Inc.", basePrice: 35 },
+  UPST: { name: "Upstart Holdings Inc.", basePrice: 30 },
+  SOFI: { name: "SoFi Technologies Inc.", basePrice: 8 },
+  NKE: { name: "Nike Inc.", basePrice: 95 },
+  LULU: { name: "Lululemon Athletica Inc.", basePrice: 350 },
+  TGT: { name: "Target Corp.", basePrice: 170 },
+  TJX: { name: "TJX Companies Inc.", basePrice: 100 },
+  VRTX: { name: "Vertex Pharmaceuticals Inc.", basePrice: 400 },
+  REGN: { name: "Regeneron Pharmaceuticals Inc.", basePrice: 900 },
+  ISRG: { name: "Intuitive Surgical Inc.", basePrice: 400 },
+  TM: { name: "Toyota Motor Corp.", basePrice: 230 },
+  NIO: { name: "NIO Inc.", basePrice: 5 },
+  LI: { name: "Li Auto Inc.", basePrice: 25 },
+  XPEV: { name: "XPeng Inc.", basePrice: 10 },
+  UPS: { name: "United Parcel Service Inc.", basePrice: 150 },
+  FDX: { name: "FedEx Corp.", basePrice: 250 },
+  LMT: { name: "Lockheed Martin Corp.", basePrice: 450 },
+  RTX: { name: "RTX Corp.", basePrice: 100 },
+  DE: { name: "Deere & Co.", basePrice: 390 },
+  SCHW: { name: "Charles Schwab Corp.", basePrice: 75 },
+  BLK: { name: "BlackRock Inc.", basePrice: 800 },
+  MS: { name: "Morgan Stanley", basePrice: 90 },
+  AXP: { name: "American Express Co.", basePrice: 220 },
+  C: { name: "Citigroup Inc.", basePrice: 60 },
+  USB: { name: "U.S. Bancorp", basePrice: 45 },
+  U: { name: "Unity Software Inc.", basePrice: 30 },
   SCHD: { name: "Schwab US Dividend Equity ETF", basePrice: 78 },
   VTI: { name: "Vanguard Total Stock Market ETF", basePrice: 260 },
   VT: { name: "Vanguard Total World Stock ETF", basePrice: 105 },
   GME: { name: "GameStop Corp.", basePrice: 15 },
-  AMC: { name: "AMC Entertainment Holdings Inc.", basePrice: 4 },
-  MSTR: { name: "MicroStrategy Inc.", basePrice: 1600 }
+  AMC: { name: "AMC Entertainment Holdings Inc.", basePrice: 4 }
 };
 
 const SUPPORTED_SYMBOLS = Object.keys(SYMBOL_META) as SupportedSymbol[];

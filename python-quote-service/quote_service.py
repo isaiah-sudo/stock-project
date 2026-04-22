@@ -13,7 +13,12 @@ SUPPORTED_SYMBOLS = {
     "NFLX", "AMD", "DIS", "CRM", "INTC", "PYPL", "VOO", "QQQ", "SPY", "BABA",
     "WMT", "KO", "PEP", "ORCL", "BAC", "WFC", "CSCO", "CVX", "MRK", "PFE",
     "ABBV", "T", "VZ", "CMCSA", "CAT", "BA", "IBM", "HON", "GE", "LOW",
-    "MCD", "SBUX", "UBER", "ABNB", "PLTR", "QCOM", "TXN", "TMUS", "AMGN", "GS"
+    "MCD", "SBUX", "UBER", "ABNB", "PLTR", "QCOM", "TXN", "TMUS", "AMGN", "GS",
+    "SHOP", "SNOW", "NET", "DDOG", "OKTA", "CRWD", "ZS", "TEAM", "MDB", "PANW",
+    "SQ", "MSTR", "COIN", "HOOD", "AFRM", "UPST", "SOFI", "NKE", "LULU", "TGT",
+    "TJX", "VRTX", "REGN", "ISRG", "TM", "NIO", "LI", "XPEV", "UPS", "FDX",
+    "LMT", "RTX", "DE", "SCHW", "BLK", "MS", "AXP", "C", "USB", "U", "SCHD",
+    "VTI", "VT", "GME", "AMC"
 }
 ALPHA_VANTAGE_API_KEY = os.getenv("ALPHA_VANTAGE_API_KEY", "").strip()
 
