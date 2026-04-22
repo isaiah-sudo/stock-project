@@ -10,7 +10,12 @@ app = FastAPI(title="Stock Quote Service")
 SUPPORTED_SYMBOLS = {
     "AAPL", "MSFT", "NVDA", "AMZN", "GOOGL", "TSLA", "META", "BRK-B", "UNH", "V", 
     "JPM", "LLY", "AVGO", "XOM", "MA", "JNJ", "PG", "COST", "HD", "ADBE", 
-    "NFLX", "AMD", "DIS", "CRM", "INTC", "PYPL", "VOO", "QQQ", "SPY", "BABA" "RBLX"
+    "NFLX", "AMD", "DIS", "CRM", "INTC", "PYPL", "VOO", "QQQ", "SPY", "BABA", 
+    "RBLX", "WMT", "PEP", "KO", "BAC", "T", "VZ", "PFE", "MRK", "ABBV", 
+    "ORCL", "CSCO", "ACN", "TXN", "QCOM", "MU", "AMAT", "UBER", "ABNB", "SQ", 
+    "SHOP", "SE", "MELI", "SNOW", "PLTR", "TSM", "NKE", "SBUX", "GS", "MS",
+    "SOFI", "U", "CRWD", "TGT", "CVX", "CAT", "DE", "COIN", "SCHD", "VTI", 
+    "VT", "GME", "AMC", "MSTR"
 }
 ALPHA_VANTAGE_API_KEY = os.getenv("ALPHA_VANTAGE_API_KEY", "").strip()
 

@@ -7,7 +7,9 @@ type SupportedSymbol =
   "JPM" | "LLY" | "AVGO" | "XOM" | "MA" | "JNJ" | "PG" | "COST" | "HD" | "ADBE" | 
   "NFLX" | "AMD" | "DIS" | "CRM" | "INTC" | "PYPL" | "VOO" | "QQQ" | "SPY" | "BABA" |
   "PLTR" | "SOFI" | "U" | "SNOW" | "CRWD" | "NKE" | "SBUX" | "TGT" | "WMT" | "CVX" |
-  "CAT" | "DE" | "GS" | "MS" | "SQ" | "COIN" | "SCHD" | "VTI" | "VT" | "GME" | "AMC" | "MSTR";
+  "CAT" | "DE" | "GS" | "MS" | "SQ" | "COIN" | "SCHD" | "VTI" | "VT" | "GME" | "AMC" | "MSTR" |
+  "RBLX" | "PEP" | "KO" | "BAC" | "T" | "VZ" | "PFE" | "MRK" | "ABBV" | "ORCL" | "CSCO" | 
+  "ACN" | "TXN" | "QCOM" | "MU" | "AMAT" | "UBER" | "ABNB" | "SHOP" | "SE" | "MELI" | "TSM";
 
 interface Position {
   symbol: SupportedSymbol;
@@ -82,7 +84,29 @@ const SYMBOL_META: Record<SupportedSymbol, { name: string; basePrice: number }> 
   VT: { name: "Vanguard Total World Stock ETF", basePrice: 105 },
   GME: { name: "GameStop Corp.", basePrice: 15 },
   AMC: { name: "AMC Entertainment Holdings Inc.", basePrice: 4 },
-  MSTR: { name: "MicroStrategy Inc.", basePrice: 1600 }
+  MSTR: { name: "MicroStrategy Inc.", basePrice: 1600 },
+  RBLX: { name: "Roblox Corp.", basePrice: 35 },
+  PEP: { name: "PepsiCo Inc.", basePrice: 175 },
+  KO: { name: "Coca-Cola Co.", basePrice: 60 },
+  BAC: { name: "Bank of America Corp.", basePrice: 38 },
+  T: { name: "AT&T Inc.", basePrice: 17 },
+  VZ: { name: "Verizon Communications Inc.", basePrice: 40 },
+  PFE: { name: "Pfizer Inc.", basePrice: 28 },
+  MRK: { name: "Merck & Co. Inc.", basePrice: 130 },
+  ABBV: { name: "AbbVie Inc.", basePrice: 170 },
+  ORCL: { name: "Oracle Corp.", basePrice: 120 },
+  CSCO: { name: "Cisco Systems Inc.", basePrice: 50 },
+  ACN: { name: "Accenture plc", basePrice: 330 },
+  TXN: { name: "Texas Instruments Inc.", basePrice: 180 },
+  QCOM: { name: "QUALCOMM Inc.", basePrice: 175 },
+  MU: { name: "Micron Technology Inc.", basePrice: 120 },
+  AMAT: { name: "Applied Materials Inc.", basePrice: 210 },
+  UBER: { name: "Uber Technologies Inc.", basePrice: 70 },
+  ABNB: { name: "Airbnb Inc.", basePrice: 160 },
+  SHOP: { name: "Shopify Inc.", basePrice: 75 },
+  SE: { name: "Sea Ltd.", basePrice: 60 },
+  MELI: { name: "MercadoLibre Inc.", basePrice: 1500 },
+  TSM: { name: "Taiwan Semiconductor Manufacturing Co.", basePrice: 140 }
 };
 
 const SUPPORTED_SYMBOLS = Object.keys(SYMBOL_META) as SupportedSymbol[];

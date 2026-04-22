@@ -19,36 +19,62 @@ export function PerformanceChart({ portfolio }: { portfolio: Portfolio }) {
   const chartData = useMemo(() => {
     const marketValue = totalValue - (portfolio.cashBalance ?? 0);
     const startValue = marketValue - dayChangeDollar;
-    const now = Date.now();
-    const dataPoints = 24;
-    const startTime = now - 8 * 60 * 60 * 1000; // Last 8 hours
+    
+    const now = new Date();
+    const endMs = now.getTime();
+    
+    // Show the last 8 hours, aligned to the hour
+    const lookbackMs = 8 * 60 * 60 * 1000;
+    const startMsRaw = endMs - lookbackMs;
+    const startDate = new Date(startMsRaw);
+    startDate.setMinutes(0, 0, 0);
+    const startMs = startDate.getTime();
+    
+    // Generate points every 15 minutes for a smooth line
+    const intervalMs = 15 * 60 * 1000;
+    const points: number[] = [];
+    for (let t = startMs; t <= endMs; t += intervalMs) {
+      points.push(t);
+    }
+    
+    // Ensure the last point is exactly 'now' for the current price
+    if (points[points.length - 1] < endMs) {
+      points.push(endMs);
+    }
 
-    return Array.from({ length: dataPoints }, (_, i) => {
-      const timeFraction = i / (dataPoints - 1);
-      const timestamp = startTime + timeFraction * (now - startTime);
+    const totalPoints = points.length;
+
+    return points.map((timestamp, i) => {
+      const timeFraction = i / (totalPoints - 1);
 
       // Interpolated baseline
       const linearValue = startValue + (marketValue - startValue) * timeFraction;
 
       // Sharp movements and volatility
-      // We use multiple sine waves and random jumps for a realistic feel
       const noise = (
         Math.sin(timeFraction * 12) * 0.008 + 
         Math.sin(timeFraction * 25) * 0.004 + 
         (Math.random() - 0.5) * 0.015
-      ) * (marketValue || 1000); // Use a baseline if marketValue is 0
+      ) * (marketValue || 1000);
 
       const envelope = Math.sin(timeFraction * Math.PI);
       const value = linearValue + (noise * envelope);
 
       const date = new Date(timestamp);
+      // Clean labels like "2:00 PM"
+      const label = date.toLocaleTimeString([], { 
+        hour: "numeric", 
+        minute: "2-digit",
+        hour12: true 
+      });
+
       return {
-        label: date.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
+        label,
         value: Number(value.toFixed(2)),
         timestamp,
       };
     });
-  }, [totalValue, dayChangeDollar]);
+  }, [totalValue, dayChangeDollar, portfolio.cashBalance]);
 
   const values = chartData.map((p) => p.value);
   const dataMin = Math.min(...values);
