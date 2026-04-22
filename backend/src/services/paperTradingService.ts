@@ -2,13 +2,13 @@ import type { Portfolio, Transaction } from "@stock/shared";
 import { prisma } from "../lib/prisma.js";
 import { computePortfolioDayMetrics } from "./portfolioMetrics.js";
 
-type SupportedSymbol = 
-  "AAPL" | "MSFT" | "NVDA" | "AMZN" | "GOOGL" | "TSLA" | "META" | "BRK-B" | "UNH" | "V" | 
-  "JPM" | "LLY" | "AVGO" | "XOM" | "MA" | "JNJ" | "PG" | "COST" | "HD" | "ADBE" | 
+type SupportedSymbol =
+  "AAPL" | "MSFT" | "NVDA" | "AMZN" | "GOOGL" | "TSLA" | "META" | "BRK-B" | "UNH" | "V" |
+  "JPM" | "LLY" | "AVGO" | "XOM" | "MA" | "JNJ" | "PG" | "COST" | "HD" | "ADBE" |
   "NFLX" | "AMD" | "DIS" | "CRM" | "INTC" | "PYPL" | "VOO" | "QQQ" | "SPY" | "BABA" |
   "PLTR" | "SOFI" | "U" | "SNOW" | "CRWD" | "NKE" | "SBUX" | "TGT" | "WMT" | "CVX" |
   "CAT" | "DE" | "GS" | "MS" | "SQ" | "COIN" | "SCHD" | "VTI" | "VT" | "GME" | "AMC" | "MSTR" |
-  "RBLX" | "PEP" | "KO" | "BAC" | "T" | "VZ" | "PFE" | "MRK" | "ABBV" | "ORCL" | "CSCO" | 
+  "RBLX" | "PEP" | "KO" | "BAC" | "T" | "VZ" | "PFE" | "MRK" | "ABBV" | "ORCL" | "CSCO" |
   "ACN" | "TXN" | "QCOM" | "MU" | "AMAT" | "UBER" | "ABNB" | "SHOP" | "SE" | "MELI" | "TSM";
 
 interface Position {
@@ -62,7 +62,7 @@ const SYMBOL_META: Record<SupportedSymbol, { name: string; basePrice: number }> 
   VOO: { name: "Vanguard S&P 500 ETF", basePrice: 470 },
   QQQ: { name: "Invesco QQQ Trust", basePrice: 440 },
   SPY: { name: "SPDR S&P 500 ETF Trust", basePrice: 515 },
-  BABA: { name: "Alibaba Group Holding Ltd.", basePrice: 75 },
+  BABA: { name: "Alibaba Group Holding Ltd.", basePrice: 136 },
   PLTR: { name: "Palantir Technologies Inc.", basePrice: 24 },
   SOFI: { name: "SoFi Technologies Inc.", basePrice: 8 },
   U: { name: "Unity Software Inc.", basePrice: 30 },
@@ -508,9 +508,9 @@ class PaperTradingService {
 
   async getLeaderboard() {
     const accounts = await prisma.paperAccount.findMany({
-      include: { 
+      include: {
         user: { select: { email: true, experiencePoints: true } },
-        positions: true 
+        positions: true
       }
     });
 
@@ -518,7 +518,7 @@ class PaperTradingService {
     const allPositions = accounts.flatMap(acc => acc.positions);
     const uniqueSymbols = Array.from(new Set(allPositions.map(p => p.symbol)));
     const quoteMap = new Map<string, LiveQuote | null>();
-    
+
     const quotes = await Promise.all(
       uniqueSymbols.map(symbol => this.getQuote(symbol))
     );
@@ -534,7 +534,7 @@ class PaperTradingService {
         const price = quote?.currentPrice ?? pos.averageCost;
         holdingsValue += pos.quantity * price;
       }
-      
+
       return {
         userId: account.userId,
         email: account.user.email.split("@")[0], // Mask email for privacy
