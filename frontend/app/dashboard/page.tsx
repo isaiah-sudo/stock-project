@@ -13,6 +13,13 @@ import { Leaderboard } from "../../components/Leaderboard";
 import { TutorialOverlay, type TutorialStep } from "../../components/TutorialOverlay";
 import { dismissEducationTutorial, getMode, shouldShowEducationTutorial } from "../../lib/appMode";
 import { LearnMore } from "../../components/LearnMore";
+import { TrophyCard } from "../../components/TrophyCard";
+
+interface Achievement {
+  id: string;
+  type: string;
+  unlockedAt: string;
+}
 
 const PerformanceChart = dynamic(() => import("../../components/PerformanceChart").then((mod) => mod.PerformanceChart), { 
   ssr: false, 
@@ -28,6 +35,8 @@ export default function DashboardPage() {
   const [showTutorial, setShowTutorial] = useState(false);
   const [activeTutorialTarget, setActiveTutorialTarget] = useState<string | null>(null);
   const [isEducational, setIsEducational] = useState(false);
+  const [isSummaryExpanded, setIsSummaryExpanded] = useState(false);
+  const [achievements, setAchievements] = useState<Achievement[]>([]);
 
   const initialBalance = 10000;
   const marketValue = portfolio ? portfolio.totalValue - portfolio.cashBalance : 0;
@@ -46,6 +55,10 @@ export default function DashboardPage() {
         console.error(err);
         setError(err.message);
       });
+      
+    apiFetch<Achievement[]>("/paper/achievements")
+      .then(setAchievements)
+      .catch(() => {});
   }
 
   function loadMarketStatus() {
@@ -115,8 +128,15 @@ export default function DashboardPage() {
     }
   ];
 
+  const isUp = dayPerformanceDollar >= 0;
+  const backgroundClass = portfolio 
+    ? (isUp 
+        ? "bg-gradient-to-br from-amber-50 via-emerald-50/50 to-teal-50" 
+        : "bg-gradient-to-br from-slate-200 via-rose-100/60 to-slate-100")
+    : "bg-slate-50/50";
+
   return (
-    <div className="min-h-screen bg-slate-50/50">
+    <div className={`min-h-screen transition-colors duration-1000 ${backgroundClass}`}>
       <main className="mx-auto max-w-7xl space-y-6 p-4 sm:space-y-8 sm:p-8">
         <div id="dashboard-nav" className={highlightClass("dashboard-nav")}>
           <Navbar onChatClick={() => setActiveTab(activeTab === "chat" ? "portfolio" : "chat")} />
@@ -182,6 +202,59 @@ export default function DashboardPage() {
                     </p>
                   </div>
                 </div>
+
+                <div className="mt-4 flex flex-col items-center border-t border-slate-100 pt-2">
+                  <button 
+                    onClick={() => setIsSummaryExpanded(!isSummaryExpanded)}
+                    className="flex items-center gap-1 text-xs font-bold uppercase tracking-widest text-slate-400 hover:text-slate-600 transition"
+                  >
+                    {isSummaryExpanded ? "Hide Details ᐱ" : "Show XP & Trophies ᐯ"}
+                  </button>
+                  
+                  <div className={`w-full overflow-hidden transition-all duration-500 ease-[cubic-bezier(0.23,1,0.32,1)] ${isSummaryExpanded ? "max-h-64 opacity-100 mt-6" : "max-h-0 opacity-0 mt-0"}`}>
+                    <div className="flex w-full items-center justify-between rounded-3xl bg-white/60 p-4 border border-slate-100 shadow-sm backdrop-blur-sm">
+                      {/* Left: XP */}
+                      <div className="flex flex-col items-center sm:items-start pl-4">
+                        <div className="text-xs font-bold uppercase tracking-widest text-slate-400">Your Experience</div>
+                        <div className="mt-1 flex items-baseline gap-2 text-4xl font-black text-blue-600 drop-shadow-sm">
+                          {portfolio.experiencePoints || 0} <span className="text-lg font-bold text-slate-500">XP</span>
+                        </div>
+                      </div>
+
+                      {/* Right: Trophies */}
+                      <div className="flex flex-col items-end pr-4">
+                        <div className="mb-3 text-xs font-bold uppercase tracking-widest text-slate-400">Top Trophies</div>
+                        <div className="flex items-center gap-4">
+                          {(() => {
+                            const ACHIEVEMENT_META: Record<string, { label: string; icon: string }> = {
+                              WHALE: { label: "Whale", icon: "🐋" },
+                              ALL_STAR: { label: "All Star", icon: "🌟" },
+                              BULL_RUN: { label: "Bull Run", icon: "🐂" },
+                              PROFIT_TAKER: { label: "Profit Taker", icon: "💰" },
+                              DIVERSIFIED: { label: "Diversified", icon: "🌍" },
+                              TEN_PCT_GAIN: { label: "Investor", icon: "📈" },
+                              FIRST_TRADE: { label: "First Trade", icon: "🤝" },
+                            };
+                            
+                            const unlockedMeta = achievements
+                              .map(a => ACHIEVEMENT_META[a.type])
+                              .filter(Boolean);
+                              
+                            const topThree = unlockedMeta.slice(0, 3);
+                            
+                            if (topThree.length === 0) {
+                              return <div className="text-sm font-semibold text-slate-400 italic py-6">No trophies unlocked yet.</div>;
+                            }
+                            
+                            return topThree.map((meta, i) => (
+                              <TrophyCard key={meta.label} rank={(i + 1) as 1|2|3} icon={meta.icon} label={meta.label} />
+                            ));
+                          })()}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
               </section>
 
               <section className="rounded-[2rem] border border-slate-200 bg-white p-4 shadow-sm sm:p-6">
@@ -210,11 +283,7 @@ export default function DashboardPage() {
 
             <div className={`overflow-hidden transition-all duration-500 ease-out ${activeTab === "chat" ? "w-full opacity-100 lg:w-1/3 xl:w-[420px]" : "w-0 opacity-0 lg:w-0"}`}>
               <div className={`flex h-full min-h-[60vh] flex-col rounded-[2rem] border border-slate-200 bg-white p-4 shadow-sm transition-all duration-500 ease-out sm:min-h-[640px] sm:p-6 ${activeTab === "chat" ? "opacity-100 translate-x-0" : "opacity-0 translate-x-6"}`}>
-                <div className="mb-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between flex-shrink-0">
-                  <div>
-                    <p className="text-xs font-bold uppercase tracking-widest text-gray-400 mb-1">AI Chat Assistant</p>
-                    <h2 className="text-xl font-bold text-slate-900 sm:text-2xl">Ask your portfolio advisor</h2>
-                  </div>
+                <div className="mb-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-end flex-shrink-0">
                   <button
                     type="button"
                     onClick={() => setActiveTab("portfolio")}

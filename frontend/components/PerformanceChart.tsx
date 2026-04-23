@@ -109,7 +109,7 @@ export function PerformanceChart({ portfolio }: { portfolio: Portfolio }) {
   const lineColor = isPositive ? "#10b981" : "#ef4444";
 
   return (
-    <div className="h-96 w-full rounded-3xl bg-white p-6 shadow-sm border border-gray-100 flex flex-col">
+    <div className="h-[500px] w-full rounded-3xl bg-white p-6 shadow-sm border border-gray-100 flex flex-col">
       <div className="mb-6 flex items-start justify-between">
         <div>
           <p className="text-xs font-bold uppercase tracking-widest text-gray-400 mb-1">Market Value</p>
@@ -129,6 +129,12 @@ export function PerformanceChart({ portfolio }: { portfolio: Portfolio }) {
       <div className="flex-1 w-full min-h-0">
         <ResponsiveContainer width="100%" height="100%">
           <LineChart data={chartData} margin={{ top: 18, right: 16, left: -10, bottom: 12 }}>
+            <defs>
+              <linearGradient id="colorUv" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="5%" stopColor={lineColor} stopOpacity={0.3}/>
+                <stop offset="95%" stopColor={lineColor} stopOpacity={0}/>
+              </linearGradient>
+            </defs>
             <CartesianGrid strokeDasharray="4 4" vertical={false} stroke="#f1f5f9" />
             <XAxis 
               dataKey="label" 
@@ -163,8 +169,7 @@ export function PerformanceChart({ portfolio }: { portfolio: Portfolio }) {
               type="monotone"
               dataKey="value"
               stroke="transparent"
-              fill={lineColor}
-              fillOpacity={0.12}
+              fill="url(#colorUv)"
               animationDuration={1500}
             />
             <Line
