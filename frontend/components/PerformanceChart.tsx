@@ -80,7 +80,22 @@ export function PerformanceChart({ portfolio }: { portfolio: Portfolio }) {
   const dataMin = Math.min(...values);
   const dataMax = Math.max(...values);
   const marketValue = totalValue - (portfolio.cashBalance ?? 0);
-  const buffer = (dataMax - dataMin) * 0.28 || marketValue * 0.02;
+
+  // Generate ticks: min, max, and every $100 in between
+  const ticks = [dataMin];
+  const firstHundred = Math.ceil(dataMin / 100) * 100;
+  const lastHundred = Math.floor(dataMax / 100) * 100;
+  
+  for (let i = firstHundred; i <= lastHundred; i += 100) {
+    // Prevent overlapping labels by requiring at least $15 distance from min/max
+    if (i - dataMin > 15 && dataMax - i > 15) {
+      ticks.push(i);
+    }
+  }
+  
+  if (dataMax > dataMin) {
+    ticks.push(dataMax);
+  }
 
   const isPositive = dayChangeDollar >= 0;
   const lineColor = isPositive ? "#10b981" : "#ef4444";
@@ -116,7 +131,8 @@ export function PerformanceChart({ portfolio }: { portfolio: Portfolio }) {
               padding={{ left: 10, right: 10 }}
             />
             <YAxis 
-              domain={[dataMin - buffer, dataMax + buffer]} 
+              domain={[dataMin, dataMax]} 
+              ticks={ticks}
               axisLine={false} 
               tickLine={false} 
               tick={{ fontSize: 11, fill: "#94a3b8", fontWeight: 500 }}
