@@ -14,7 +14,7 @@ body {
 
 .tutorial-target-highlight {
   position: relative !important;
-  z-index: 70 !important;
+  z-index: 99999 !important;
   animation: tutorial-pulse 2s infinite;
   @apply ring-4 ring-blue-600/30 ring-offset-2 !important;
 }

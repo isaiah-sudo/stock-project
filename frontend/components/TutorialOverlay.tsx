@@ -40,10 +40,34 @@ export function TutorialOverlay({
 
   // Global Scroll Locking
   useEffect(() => {
-    const originalStyle = window.getComputedStyle(document.body).overflow;
-    document.body.style.overflow = "hidden";
+    const originalBodyOverflow = window.getComputedStyle(document.body).overflow;
+    const originalHtmlOverflow = window.getComputedStyle(document.documentElement).overflow;
+    
+    document.body.style.setProperty("overflow", "hidden", "important");
+    document.documentElement.style.setProperty("overflow", "hidden", "important");
+    
+    const preventScroll = (e: Event) => {
+      const target = e.target as HTMLElement;
+      if (target.closest('.tutorial-dialog')) return;
+      e.preventDefault();
+    };
+    
+    const preventKeyScroll = (e: KeyboardEvent) => {
+      if (["Space", "ArrowUp", "ArrowDown", "PageUp", "PageDown", "Home", "End"].includes(e.code)) {
+        e.preventDefault();
+      }
+    };
+
+    window.addEventListener("wheel", preventScroll, { passive: false });
+    window.addEventListener("touchmove", preventScroll, { passive: false });
+    window.addEventListener("keydown", preventKeyScroll as any, { passive: false });
+
     return () => {
-      document.body.style.overflow = originalStyle;
+      document.body.style.overflow = originalBodyOverflow;
+      document.documentElement.style.overflow = originalHtmlOverflow;
+      window.removeEventListener("wheel", preventScroll);
+      window.removeEventListener("touchmove", preventScroll);
+      window.removeEventListener("keydown", preventKeyScroll as any);
     };
   }, []);
 
@@ -123,31 +147,41 @@ export function TutorialOverlay({
 
   // Handle styles based on position and mobile state
   const getTooltipStyle = () => {
-    if (!tooltipPos || isScrolling) {
-      return { opacity: 0, pointerEvents: "none" as const };
-    }
-    
-    if (tooltipPos.isMobile) {
+    const baseStyle: React.CSSProperties = {
+      opacity: (!tooltipPos || isScrolling) ? 0 : 1,
+      pointerEvents: (!tooltipPos || isScrolling) ? "none" : "auto",
+      position: "fixed",
+    };
+
+    if (tooltipPos?.isMobile) {
       return {
-        position: "fixed" as const,
+        ...baseStyle,
         bottom: "20px",
         left: "50%",
         transform: "translateX(-50%)",
         width: "calc(100% - 32px)",
         maxWidth: "400px",
-        opacity: 1
       };
     }
+    
+    if (tooltipPos) {
+      return {
+        ...baseStyle,
+        top: tooltipPos.top,
+        left: tooltipPos.left,
+      };
+    }
+
     return {
-      position: "fixed" as const,
-      top: tooltipPos.top,
-      left: tooltipPos.left,
-      opacity: 1
+      ...baseStyle,
+      top: "50%",
+      left: "50%",
+      transform: "translate(-50%, -50%)",
     };
   };
 
   return (
-    <div className={`fixed inset-0 z-[60] ${!tooltipPos ? "flex items-center justify-center" : ""} bg-slate-900/40 p-4 backdrop-blur-sm transition-all duration-500`}>
+    <div className={`fixed inset-0 z-[99990] ${!tooltipPos ? "flex items-center justify-center" : ""} bg-slate-900/40 p-4 backdrop-blur-sm transition-all duration-500`}>
       <div 
         ref={tooltipRef}
         className={`w-full ${tooltipPos?.isMobile ? "" : "max-w-sm"} rounded-[2rem] border border-slate-100 bg-white p-6 shadow-2xl transition-all duration-500 ease-[cubic-bezier(0.23,1,0.32,1)]`}
