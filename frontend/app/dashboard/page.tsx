@@ -119,7 +119,7 @@ export default function DashboardPage() {
     <div className="min-h-screen bg-slate-50/50">
       <main className="mx-auto max-w-7xl space-y-6 p-4 sm:space-y-8 sm:p-8">
         <div id="dashboard-nav" className={highlightClass("dashboard-nav")}>
-          <Navbar onChatClick={() => setActiveTab("chat")} />
+          <Navbar onChatClick={() => setActiveTab(activeTab === "chat" ? "portfolio" : "chat")} />
         </div>
         {error ? (
           <div className="rounded-3xl bg-red-50 p-4 text-sm font-semibold text-red-700 border border-red-100">

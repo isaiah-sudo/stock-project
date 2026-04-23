@@ -7,6 +7,7 @@ const sortOptions = [
   { value: "marketValue", label: "Market Value" },
   { value: "returnContribution", label: "Return Contribution" },
   { value: "pnl", label: "P/L" },
+  { value: "dayPnl", label: "Day P/L" },
   { value: "allocation", label: "Allocation" },
 ];
 
@@ -24,6 +25,10 @@ export function HoldingsTable({ holdings }: { holdings: Holding[] }) {
       const bPnl = bMarketValue - bCost;
       const aPnlPct = a.averageCost > 0 ? ((a.currentPrice - a.averageCost) / a.averageCost) * 100 : 0;
       const bPnlPct = b.averageCost > 0 ? ((b.currentPrice - b.averageCost) / b.averageCost) * 100 : 0;
+      const aPrevClose = a.currentPrice / (1 + a.changePct / 100);
+      const bPrevClose = b.currentPrice / (1 + b.changePct / 100);
+      const aDayPnl = (a.currentPrice - aPrevClose) * a.quantity;
+      const bDayPnl = (b.currentPrice - bPrevClose) * b.quantity;
       const aAlloc = holdingsValue > 0 ? (aMarketValue / holdingsValue) * 100 : 0;
       const bAlloc = holdingsValue > 0 ? (bMarketValue / holdingsValue) * 100 : 0;
       const aReturnContribution = holdingsValue > 0 ? (aAlloc * aPnlPct) / 100 : 0;
@@ -34,6 +39,8 @@ export function HoldingsTable({ holdings }: { holdings: Holding[] }) {
           return bReturnContribution - aReturnContribution;
         case "pnl":
           return bPnl - aPnl;
+        case "dayPnl":
+          return bDayPnl - aDayPnl;
         case "allocation":
           return bAlloc - aAlloc;
         case "marketValue":
@@ -81,6 +88,7 @@ export function HoldingsTable({ holdings }: { holdings: Holding[] }) {
               <th>Qty</th>
               <th>Live Price</th>
               <th>Market Value</th>
+              <th>Day P/L</th>
               <th>P/L</th>
               <th>Alloc</th>
               <th>P/L %</th>
@@ -92,6 +100,8 @@ export function HoldingsTable({ holdings }: { holdings: Holding[] }) {
               const marketValue = h.quantity * h.currentPrice;
               const costBasis = h.quantity * h.averageCost;
               const pnl = marketValue - costBasis;
+              const prevClose = h.currentPrice / (1 + h.changePct / 100);
+              const dayPnl = (h.currentPrice - prevClose) * h.quantity;
               const pnlPct = h.averageCost > 0 ? ((h.currentPrice - h.averageCost) / h.averageCost) * 100 : 0;
               const alloc = holdingsValue > 0 ? (marketValue / holdingsValue) * 100 : 0;
               const returnContribution = holdingsValue > 0 ? (alloc * pnlPct) / 100 : 0;
@@ -102,6 +112,9 @@ export function HoldingsTable({ holdings }: { holdings: Holding[] }) {
                 <td>{h.quantity}</td>
                 <td>${h.currentPrice.toFixed(2)}</td>
                 <td>${marketValue.toLocaleString(undefined, { maximumFractionDigits: 2 })}</td>
+                <td className={dayPnl >= 0 ? "text-emerald-600" : "text-rose-600"}>
+                  {dayPnl >= 0 ? "+" : "-"}${Math.abs(dayPnl).toLocaleString(undefined, { maximumFractionDigits: 2 })}
+                </td>
                 <td className={pnl >= 0 ? "text-emerald-600" : "text-rose-600"}>
                   {pnl >= 0 ? "+" : "-"}${Math.abs(pnl).toLocaleString(undefined, { maximumFractionDigits: 2 })}
                 </td>
