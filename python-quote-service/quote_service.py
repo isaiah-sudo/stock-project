@@ -3,7 +3,7 @@ from datetime import datetime, timezone
 
 import requests
 import yfinance as yf
-from fastapi import FastAPI, HTTPException, Query
+from fastapi import FastAPI, HTTPException, Query, Request
 
 app = FastAPI(title="Stock Quote Service")
 
@@ -75,8 +75,19 @@ def health():
 
 
 @app.get("/quote")
-def quote(symbol: str = Query(..., min_length=1)):
-    normalized = symbol.upper().strip()
+def quote(
+    request: Request,
+    symbol: str | None = Query(None, min_length=1),
+    ticker: str | None = Query(None, min_length=1),
+):
+    # Helpful when debugging malformed query strings from clients.
+    print("Received params:", dict(request.query_params))
+
+    raw_symbol = symbol if symbol is not None else ticker
+    if raw_symbol is None:
+        raise HTTPException(status_code=400, detail="symbol (or ticker) query parameter is required")
+
+    normalized = raw_symbol.upper().strip()
     if normalized not in SUPPORTED_SYMBOLS:
         raise HTTPException(status_code=400, detail=f"Unsupported symbol: {normalized}")
 
