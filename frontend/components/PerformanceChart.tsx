@@ -42,22 +42,30 @@ export function PerformanceChart({ portfolio }: { portfolio: Portfolio }) {
       points.push(endMs);
     }
 
-    const totalPoints = points.length;
+    const timeSpan = endMs - startMs;
 
-    return points.map((timestamp, i) => {
-      const timeFraction = i / (totalPoints - 1);
+    return points.map((timestamp) => {
+      const relativeFraction = timeSpan > 0 ? (timestamp - startMs) / timeSpan : 0;
 
       // Interpolated baseline
-      const linearValue = startValue + (marketValue - startValue) * timeFraction;
+      const linearValue = startValue + (marketValue - startValue) * relativeFraction;
 
-      // Sharp movements and volatility
+      // Use absolute time for stable noise generation
+      const hoursEpoch = timestamp / (1000 * 60 * 60);
+      const timeScale = hoursEpoch / 8; // scale to match original 8-hour window frequency
+      
+      // Deterministic pseudo-random based on timestamp
+      const pseudoRandom = Math.abs(Math.sin(timestamp * 12.9898) * 43758.5453) % 1;
+
+      // Sharp movements and volatility (deterministic)
       const noise = (
-        Math.sin(timeFraction * 12) * 0.008 + 
-        Math.sin(timeFraction * 25) * 0.004 + 
-        (Math.random() - 0.5) * 0.015
-      ) * (marketValue || 1000);
+        Math.sin(timeScale * 12) * 0.008 + 
+        Math.sin(timeScale * 25) * 0.004 + 
+        (pseudoRandom - 0.5) * 0.015
+      ) * (startValue || 1000);
 
-      const envelope = Math.sin(timeFraction * Math.PI);
+      // Scale noise so it doesn't deviate from start/end points
+      const envelope = Math.sin(relativeFraction * Math.PI);
       const value = linearValue + (noise * envelope);
 
       const date = new Date(timestamp);
