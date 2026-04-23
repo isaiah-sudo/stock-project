@@ -39,7 +39,7 @@ export function TrophyCard({ rank, icon, label }: { rank: 1 | 2 | 3; icon: strin
       onMouseMove={handleMouseMove}
       onMouseEnter={handleMouseEnter}
       onMouseLeave={handleMouseLeave}
-      className={`relative flex h-28 w-28 shrink-0 flex-col items-center justify-center rounded-2xl border-2 bg-gradient-to-br from-white to-slate-50 p-2 text-center transition-all ${borderGlow}`}
+      className={`relative flex flex-1 h-32 min-w-[100px] max-w-[180px] shrink-0 flex-col items-center justify-center rounded-2xl border-2 bg-gradient-to-br from-white to-slate-50 p-2 text-center transition-all ${borderGlow}`}
       style={{
         transformStyle: "preserve-3d",
         transform: `perspective(800px) rotateX(${rotation.x}deg) rotateY(${rotation.y}deg) scale(${isHovering ? 1.05 : 1})`,

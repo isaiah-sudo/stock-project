@@ -4,16 +4,20 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { type AppMode, getMode, resetEducationTutorial, setMode } from "../lib/appMode";
+import { getCurrentLevel, getLevelProgress, type Portfolio } from "@stock/shared";
+import { apiFetch } from "../lib/api";
 
 interface NavbarProps {
   onChatClick?: () => void;
+  experiencePoints?: number;
 }
 
-export function Navbar({ onChatClick }: NavbarProps) {
+export function Navbar({ onChatClick, experiencePoints }: NavbarProps) {
   const pathname = usePathname();
   const [mode, setCurrentMode] = useState<AppMode>("personal");
   const [showSettings, setShowSettings] = useState(false);
   const [isDarkMode, setIsDarkMode] = useState(false);
+  const [localXp, setLocalXp] = useState<number | null>(null);
 
   useEffect(() => {
     const storedMode = getMode();
@@ -21,6 +25,18 @@ export function Navbar({ onChatClick }: NavbarProps) {
       setCurrentMode(storedMode);
     }
   }, []);
+
+  useEffect(() => {
+    if (experiencePoints === undefined) {
+      apiFetch<Portfolio>("/paper/portfolio")
+        .then(p => setLocalXp(p.experiencePoints || 0))
+        .catch(() => {});
+    }
+  }, [experiencePoints]);
+
+  const xp = experiencePoints ?? localXp ?? 0;
+  const currentLevel = getCurrentLevel(xp);
+  const progress = getLevelProgress(xp);
 
   function handleModeChange(nextMode: AppMode) {
     setMode(nextMode);
@@ -90,6 +106,20 @@ export function Navbar({ onChatClick }: NavbarProps) {
         </div>
 
         <div className="flex w-full flex-wrap items-center gap-2 sm:gap-4 lg:w-auto lg:justify-end">
+          {/* Rank & XP Badge */}
+          <div className="hidden sm:flex items-center gap-3 rounded-xl border border-slate-200 bg-slate-50 px-3 py-1.5 shadow-sm transition hover:bg-slate-100">
+            <div className="flex items-center gap-1.5 border-r border-slate-200 pr-3">
+              <span className="text-lg">{currentLevel.icon}</span>
+              <span className="text-xs font-bold text-slate-700">{currentLevel.label}</span>
+            </div>
+            <div className="flex flex-col gap-0.5">
+              <span className="text-[10px] font-black uppercase tracking-wide text-blue-600">{xp} XP</span>
+              <div className="h-1 w-16 overflow-hidden rounded-full bg-slate-200">
+                <div className="h-full bg-blue-500 transition-all duration-1000" style={{ width: `${progress}%` }} />
+              </div>
+            </div>
+          </div>
+
           {/* Settings Button */}
           <div className="relative">
             <button

@@ -14,6 +14,7 @@ import { TutorialOverlay, type TutorialStep } from "../../components/TutorialOve
 import { dismissEducationTutorial, getMode, shouldShowEducationTutorial } from "../../lib/appMode";
 import { LearnMore } from "../../components/LearnMore";
 import { TrophyCard } from "../../components/TrophyCard";
+import { getCurrentLevel, getNextLevel, getLevelProgress } from "@stock/shared";
 
 interface Achievement {
   id: string;
@@ -139,7 +140,10 @@ export default function DashboardPage() {
     <div className={`min-h-screen transition-colors duration-1000 ${backgroundClass}`}>
       <main className="mx-auto max-w-7xl space-y-6 p-4 sm:space-y-8 sm:p-8">
         <div id="dashboard-nav" className={highlightClass("dashboard-nav")}>
-          <Navbar onChatClick={() => setActiveTab(activeTab === "chat" ? "portfolio" : "chat")} />
+          <Navbar 
+            onChatClick={() => setActiveTab(activeTab === "chat" ? "portfolio" : "chat")} 
+            experiencePoints={portfolio?.experiencePoints} 
+          />
         </div>
         {error ? (
           <div className="rounded-3xl bg-red-50 p-4 text-sm font-semibold text-red-700 border border-red-100">
@@ -212,19 +216,37 @@ export default function DashboardPage() {
                   </button>
                   
                   <div className={`w-full overflow-hidden transition-all duration-500 ease-[cubic-bezier(0.23,1,0.32,1)] ${isSummaryExpanded ? "max-h-64 opacity-100 mt-6" : "max-h-0 opacity-0 mt-0"}`}>
-                    <div className="flex w-full items-center justify-between rounded-3xl bg-white/60 p-4 border border-slate-100 shadow-sm backdrop-blur-sm">
-                      {/* Left: XP */}
-                      <div className="flex flex-col items-center sm:items-start pl-4">
-                        <div className="text-xs font-bold uppercase tracking-widest text-slate-400">Your Experience</div>
-                        <div className="mt-1 flex items-baseline gap-2 text-4xl font-black text-blue-600 drop-shadow-sm">
-                          {portfolio.experiencePoints || 0} <span className="text-lg font-bold text-slate-500">XP</span>
+                    <div className="flex w-full flex-col sm:flex-row items-stretch gap-6 rounded-3xl bg-white/60 p-6 border border-slate-100 shadow-sm backdrop-blur-sm">
+                      {/* Left: XP & Progress */}
+                      <div className="flex flex-col justify-center sm:w-1/3 sm:border-r sm:border-slate-200/60 sm:pr-6">
+                        <div className="text-xs font-bold uppercase tracking-widest text-slate-400 mb-2">Your Experience</div>
+                        <div className="flex items-baseline gap-2 text-4xl font-black text-blue-600 drop-shadow-sm">
+                          {portfolio.experiencePoints || 0} <span className="text-xl font-bold text-slate-500">XP</span>
                         </div>
+                        {/* Progress Bar */}
+                        {(() => {
+                           const xp = portfolio.experiencePoints || 0;
+                           const currentLevel = getCurrentLevel(xp);
+                           const nextLevel = getNextLevel(xp);
+                           const progress = getLevelProgress(xp);
+                           return (
+                             <div className="mt-4 w-full">
+                               <div className="flex items-center justify-between text-xs font-bold text-slate-500 mb-1">
+                                 <span className="flex items-center gap-1"><span className="text-sm">{currentLevel.icon}</span> {currentLevel.label}</span>
+                                 {nextLevel && <span>Next: {nextLevel.label}</span>}
+                               </div>
+                               <div className="h-2 w-full overflow-hidden rounded-full bg-slate-200">
+                                 <div className="h-full bg-blue-500 transition-all duration-1000" style={{ width: `${progress}%` }} />
+                               </div>
+                             </div>
+                           );
+                        })()}
                       </div>
 
                       {/* Right: Trophies */}
-                      <div className="flex flex-col items-end pr-4">
-                        <div className="mb-3 text-xs font-bold uppercase tracking-widest text-slate-400">Top Trophies</div>
-                        <div className="flex items-center gap-4">
+                      <div className="flex flex-1 flex-col">
+                        <div className="mb-4 text-xs font-bold uppercase tracking-widest text-slate-400">Top Trophies</div>
+                        <div className="flex flex-1 items-center justify-around gap-2">
                           {(() => {
                             const ACHIEVEMENT_META: Record<string, { label: string; icon: string }> = {
                               WHALE: { label: "Whale", icon: "🐋" },
@@ -243,7 +265,7 @@ export default function DashboardPage() {
                             const topThree = unlockedMeta.slice(0, 3);
                             
                             if (topThree.length === 0) {
-                              return <div className="text-sm font-semibold text-slate-400 italic py-6">No trophies unlocked yet.</div>;
+                              return <div className="text-sm font-semibold text-slate-400 italic py-6 w-full text-center">No trophies unlocked yet.</div>;
                             }
                             
                             return topThree.map((meta, i) => (
