@@ -52,3 +52,41 @@ iframe[class*="launcher" i] {
   margin: 0 !important;
   z-index: 9999 !important;
 }
+
+@keyframes bubble-down {
+  0% {
+    transform: translateY(-10vh) translateX(0) scale(1);
+    opacity: 0;
+  }
+  10% {
+    opacity: 0.6;
+  }
+  90% {
+    opacity: 0.6;
+  }
+  100% {
+    transform: translateY(110vh) translateX(20px) scale(1.5);
+    opacity: 0;
+  }
+}
+
+@keyframes light-pulse {
+  0%, 100% {
+    opacity: 0.1;
+    transform: scale(0.9);
+  }
+  50% {
+    opacity: 0.8;
+    transform: scale(1.1);
+  }
+}
+
+.animate-bubble-down {
+  animation: bubble-down var(--duration, 10s) ease-in-out infinite;
+  animation-delay: var(--delay, 0s);
+}
+
+.animate-light-pulse {
+  animation: light-pulse var(--duration, 8s) ease-in-out infinite;
+  animation-delay: var(--delay, 0s);
+}

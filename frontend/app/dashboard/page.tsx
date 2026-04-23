@@ -15,6 +15,7 @@ import { dismissEducationTutorial, getMode, shouldShowEducationTutorial } from "
 import { LearnMore } from "../../components/LearnMore";
 import { TrophyCard } from "../../components/TrophyCard";
 import { getCurrentLevel, getNextLevel, getLevelProgress } from "@stock/shared";
+import { type BackgroundEffect, getBackgroundEffect } from "../../lib/backgroundTheme";
 
 interface Achievement {
   id: string;
@@ -38,6 +39,7 @@ export default function DashboardPage() {
   const [isEducational, setIsEducational] = useState(false);
   const [isSummaryExpanded, setIsSummaryExpanded] = useState(false);
   const [achievements, setAchievements] = useState<Achievement[]>([]);
+  const [bgEffect, setBgEffect] = useState<BackgroundEffect>("solid");
 
   const initialBalance = 10000;
   const marketValue = portfolio ? portfolio.totalValue - portfolio.cashBalance : 0;
@@ -77,6 +79,7 @@ export default function DashboardPage() {
   useEffect(() => {
     setShowTutorial(shouldShowEducationTutorial());
     setIsEducational(getMode() === "educational");
+    setBgEffect(getBackgroundEffect());
     loadPortfolio();
     loadMarketStatus();
     const interval = window.setInterval(() => {
@@ -84,6 +87,14 @@ export default function DashboardPage() {
       loadMarketStatus();
     }, 30_000);
     return () => window.clearInterval(interval);
+  }, []);
+
+  useEffect(() => {
+    function handleBgChange() {
+      setBgEffect(getBackgroundEffect());
+    }
+    window.addEventListener("bgEffectChanged", handleBgChange);
+    return () => window.removeEventListener("bgEffectChanged", handleBgChange);
   }, []);
 
   useEffect(() => {
@@ -132,13 +143,57 @@ export default function DashboardPage() {
   const isUp = dayPerformanceDollar >= 0;
   const backgroundClass = portfolio 
     ? (isUp 
-        ? "bg-gradient-to-br from-amber-50 via-emerald-50/50 to-teal-50" 
-        : "bg-gradient-to-br from-slate-200 via-rose-100/60 to-slate-100")
+        ? "bg-gradient-to-br from-amber-100 via-emerald-100/60 to-teal-100" 
+        : "bg-gradient-to-br from-slate-300 via-rose-200/60 to-slate-200")
     : "bg-slate-50/50";
 
+  const effectColorClass = isUp ? "bg-emerald-400" : "bg-rose-400";
+  const lightColorClass = isUp ? "bg-emerald-300" : "bg-rose-300";
+
   return (
-    <div className={`min-h-screen transition-colors duration-1000 ${backgroundClass}`}>
-      <main className="mx-auto max-w-7xl space-y-6 p-4 sm:space-y-8 sm:p-8">
+    <div className={`relative min-h-screen transition-colors duration-1000 ${backgroundClass} overflow-hidden`}>
+      {bgEffect === "bubbles" && (
+        <div className="pointer-events-none absolute inset-0 overflow-hidden z-0">
+          {Array.from({ length: 15 }).map((_, i) => (
+            <div
+              key={`bubble-${i}`}
+              className={`absolute top-0 rounded-full ${effectColorClass} opacity-0 animate-bubble-down`}
+              style={{
+                left: `${Math.random() * 100}%`,
+                width: `${Math.random() * 40 + 10}px`,
+                height: `${Math.random() * 40 + 10}px`,
+                // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+                // @ts-ignore
+                "--delay": `${Math.random() * 10}s`,
+                "--duration": `${Math.random() * 10 + 5}s`,
+              }}
+            />
+          ))}
+        </div>
+      )}
+
+      {bgEffect === "lights" && (
+        <div className="pointer-events-none absolute inset-0 overflow-hidden z-0">
+          {Array.from({ length: 5 }).map((_, i) => (
+            <div
+              key={`light-${i}`}
+              className={`absolute rounded-full ${lightColorClass} blur-3xl opacity-0 animate-light-pulse`}
+              style={{
+                top: `${Math.random() * 80}%`,
+                left: `${Math.random() * 80}%`,
+                width: `${Math.random() * 300 + 200}px`,
+                height: `${Math.random() * 300 + 200}px`,
+                // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+                // @ts-ignore
+                "--delay": `${Math.random() * 5}s`,
+                "--duration": `${Math.random() * 4 + 4}s`,
+              }}
+            />
+          ))}
+        </div>
+      )}
+
+      <main className="relative z-10 mx-auto max-w-7xl space-y-6 p-4 sm:space-y-8 sm:p-8">
         <div id="dashboard-nav" className={highlightClass("dashboard-nav")}>
           <Navbar 
             onChatClick={() => setActiveTab(activeTab === "chat" ? "portfolio" : "chat")} 

@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { type AppMode, getMode, resetEducationTutorial, setMode } from "../lib/appMode";
+import { type BackgroundEffect, getBackgroundEffect, setBackgroundEffect } from "../lib/backgroundTheme";
 import { getCurrentLevel, getLevelProgress, type Portfolio } from "@stock/shared";
 import { apiFetch } from "../lib/api";
 
@@ -18,12 +19,14 @@ export function Navbar({ onChatClick, experiencePoints }: NavbarProps) {
   const [showSettings, setShowSettings] = useState(false);
   const [isDarkMode, setIsDarkMode] = useState(false);
   const [localXp, setLocalXp] = useState<number | null>(null);
+  const [bgEffect, setBgEffect] = useState<BackgroundEffect>("solid");
 
   useEffect(() => {
     const storedMode = getMode();
     if (storedMode) {
       setCurrentMode(storedMode);
     }
+    setBgEffect(getBackgroundEffect());
   }, []);
 
   useEffect(() => {
@@ -130,19 +133,48 @@ export function Navbar({ onChatClick, experiencePoints }: NavbarProps) {
               ⚙️
             </button>
             {showSettings && (
-              <div className="absolute right-0 top-full mt-2 w-48 rounded-xl border border-slate-200 bg-white p-3 shadow-lg z-50">
+              <div className="absolute right-0 top-full mt-2 w-56 rounded-xl border border-slate-200 bg-white p-3 shadow-lg z-50">
                 <p className="mb-2 text-xs font-bold uppercase text-slate-400">Settings</p>
-                <div className="flex items-center justify-between">
-                  <span className="text-sm font-semibold text-slate-700">Dark Mode</span>
-                  <button 
-                    onClick={() => {
-                      setIsDarkMode(!isDarkMode);
-                      document.documentElement.classList.toggle('dark');
-                    }}
-                    className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors ${isDarkMode ? 'bg-blue-600' : 'bg-slate-300'}`}
-                  >
-                    <span className={`inline-block h-3 w-3 transform rounded-full bg-white transition-transform ${isDarkMode ? 'translate-x-5' : 'translate-x-1'}`} />
-                  </button>
+                <div className="flex flex-col gap-3">
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm font-semibold text-slate-700">Dark Mode</span>
+                    <button 
+                      onClick={() => {
+                        setIsDarkMode(!isDarkMode);
+                        document.documentElement.classList.toggle('dark');
+                      }}
+                      className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors ${isDarkMode ? 'bg-blue-600' : 'bg-slate-300'}`}
+                    >
+                      <span className={`inline-block h-3 w-3 transform rounded-full bg-white transition-transform ${isDarkMode ? 'translate-x-5' : 'translate-x-1'}`} />
+                    </button>
+                  </div>
+                  
+                  <div className="border-t border-slate-100 pt-3">
+                    <span className="text-xs font-bold text-slate-500 mb-2 block">Background Effect</span>
+                    <div className="flex gap-1">
+                      <button 
+                        onClick={() => { setBgEffect("solid"); setBackgroundEffect("solid"); }}
+                        className={`flex-1 rounded-lg py-1.5 text-center text-sm transition ${bgEffect === "solid" ? "bg-blue-100 text-blue-700 font-bold" : "bg-slate-50 text-slate-500 hover:bg-slate-100"}`}
+                        title="Solid Gradient"
+                      >
+                        ⬛
+                      </button>
+                      <button 
+                        onClick={() => { setBgEffect("bubbles"); setBackgroundEffect("bubbles"); }}
+                        className={`flex-1 rounded-lg py-1.5 text-center text-sm transition ${bgEffect === "bubbles" ? "bg-blue-100 text-blue-700 font-bold" : "bg-slate-50 text-slate-500 hover:bg-slate-100"}`}
+                        title="Bubbles"
+                      >
+                        🫧
+                      </button>
+                      <button 
+                        onClick={() => { setBgEffect("lights"); setBackgroundEffect("lights"); }}
+                        className={`flex-1 rounded-lg py-1.5 text-center text-sm transition ${bgEffect === "lights" ? "bg-blue-100 text-blue-700 font-bold" : "bg-slate-50 text-slate-500 hover:bg-slate-100"}`}
+                        title="Pulsing Lights"
+                      >
+                        ✨
+                      </button>
+                    </div>
+                  </div>
                 </div>
               </div>
             )}
