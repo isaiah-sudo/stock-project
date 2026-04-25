@@ -157,7 +157,7 @@ export function PaperTradingPanel({ onTradeCompleted, buyingPower }: { onTradeCo
         {quote && (
           <div className="rounded-xl bg-slate-50 dark:bg-slate-700/50 p-4 border border-slate-100 dark:border-slate-600">
             <div className="grid gap-4 lg:grid-cols-[200px_1fr] lg:items-center">
-              <div className="space-y-3 text-slate-500 text-xs">
+              <div className="space-y-3 text-slate-500 text-xs font-num">
                 <div>
                   <p className="font-semibold text-slate-400 uppercase tracking-wide">Estimated Total</p>
                   <p>${(quote.currentPrice * quantity).toFixed(2)}</p>
@@ -174,11 +174,11 @@ export function PaperTradingPanel({ onTradeCompleted, buyingPower }: { onTradeCo
               <div className="rounded-2xl bg-white dark:bg-slate-800 p-4 border border-slate-200 dark:border-slate-600">
                 <div>
                   <p className="text-xs font-medium text-slate-500 dark:text-slate-400">{quote.name}</p>
-                  <p className="text-lg font-black text-slate-900 dark:text-slate-100">{quote.symbol}</p>
+                  <p className="text-lg font-black text-slate-900 dark:text-slate-100 font-num">{quote.symbol}</p>
                 </div>
                 <div className="mt-3 text-right">
-                  <p className="text-lg font-black text-slate-900 dark:text-slate-100">${quote.currentPrice.toFixed(2)}</p>
-                  <p className={`text-xs font-bold ${quote.changePct >= 0 ? "text-emerald-500" : "text-red-500"}`}>
+                  <p className="text-lg font-black text-slate-900 dark:text-slate-100 font-num">${quote.currentPrice.toFixed(2)}</p>
+                  <p className={`text-xs font-bold font-num ${quote.changePct >= 0 ? "text-emerald-500" : "text-red-500"}`}>
                     {quote.changePct >= 0 ? "+" : ""}{quote.changePct.toFixed(2)}%
                   </p>
                 </div>

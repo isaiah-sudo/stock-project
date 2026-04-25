@@ -135,9 +135,9 @@ function ChartTooltip(args: {
   return (
     <div className="rounded-2xl border border-slate-200 dark:border-slate-600 bg-white/95 dark:bg-slate-800/95 px-4 py-3 shadow-xl shadow-slate-200/60 dark:shadow-black/30 backdrop-blur">
       <div className="text-[11px] font-bold uppercase tracking-[0.24em] text-slate-400">{point.label}</div>
-      <div className="mt-2 text-lg font-black text-slate-900 dark:text-slate-100">{formatCurrency(point.portfolioValue)}</div>
+      <div className="mt-2 text-lg font-black text-slate-900 dark:text-slate-100 font-num">{formatCurrency(point.portfolioValue)}</div>
       {point.benchmarkValue !== null ? (
-        <div className="mt-1 text-sm font-semibold text-slate-500 dark:text-slate-400">
+        <div className="mt-1 text-sm font-semibold text-slate-500 dark:text-slate-400 font-num">
           {args.benchmarkLabel} {formatCurrency(point.benchmarkValue)}
         </div>
       ) : null}
@@ -247,8 +247,8 @@ export function PerformanceChart({ portfolio, marketOpen }: PerformanceChartProp
               </span>
             </div>
             <div className="mt-3 flex flex-wrap items-baseline gap-3">
-              <h2 className="text-3xl font-black tracking-tight text-slate-900 dark:text-slate-100">{formatCurrency(currentValue)}</h2>
-              <div className={`flex items-center gap-2 text-sm font-bold ${deltaValue >= 0 ? "text-emerald-500" : "text-rose-500"}`}>
+              <h2 className="text-3xl font-black tracking-tight text-slate-900 dark:text-slate-100 font-num">{formatCurrency(currentValue)}</h2>
+              <div className={`flex items-center gap-2 text-sm font-bold font-num ${deltaValue >= 0 ? "text-emerald-500" : "text-rose-500"}`}>
                 <span>{deltaValue >= 0 ? "+" : ""}{formatCurrency(deltaValue)}</span>
                 <span className="text-slate-400">
                   ({deltaPct >= 0 ? "+" : ""}{deltaPct.toFixed(2)}%)

@@ -109,20 +109,20 @@ export function HoldingsTable({ holdings }: { holdings: Holding[] }) {
               <tr key={h.symbol} className="border-t border-slate-100 dark:border-slate-700">
                 <td className="py-2 font-medium dark:text-slate-200">{h.symbol}</td>
                 <td className="dark:text-slate-300">{h.name}</td>
-                <td className="dark:text-slate-300">{h.quantity}</td>
-                <td className="dark:text-slate-300">${h.currentPrice.toFixed(2)}</td>
-                <td className="dark:text-slate-300">${marketValue.toLocaleString(undefined, { maximumFractionDigits: 2 })}</td>
-                <td className={dayPnl >= 0 ? "text-emerald-600" : "text-rose-600"}>
+                <td className="dark:text-slate-300 font-num">{h.quantity}</td>
+                <td className="dark:text-slate-300 font-num">${h.currentPrice.toFixed(2)}</td>
+                <td className="dark:text-slate-300 font-num">${marketValue.toLocaleString(undefined, { maximumFractionDigits: 2 })}</td>
+                <td className={`font-num ${dayPnl >= 0 ? "text-emerald-600" : "text-rose-600"}`}>
                   {dayPnl >= 0 ? "+" : "-"}${Math.abs(dayPnl).toLocaleString(undefined, { maximumFractionDigits: 2 })}
                 </td>
-                <td className={pnl >= 0 ? "text-emerald-600" : "text-rose-600"}>
+                <td className={`font-num ${pnl >= 0 ? "text-emerald-600" : "text-rose-600"}`}>
                   {pnl >= 0 ? "+" : "-"}${Math.abs(pnl).toLocaleString(undefined, { maximumFractionDigits: 2 })}
                 </td>
-                <td>{alloc.toFixed(1)}%</td>
-                <td className={pnlPct >= 0 ? "text-emerald-600" : "text-rose-600"}>
+                <td className="font-num">{alloc.toFixed(1)}%</td>
+                <td className={`font-num ${pnlPct >= 0 ? "text-emerald-600" : "text-rose-600"}`}>
                   {pnlPct >= 0 ? "+" : "-"}{Math.abs(pnlPct).toFixed(2)}%
                 </td>
-                <td className={returnContribution >= 0 ? "text-emerald-600" : "text-rose-600"}>
+                <td className={`font-num ${returnContribution >= 0 ? "text-emerald-600" : "text-rose-600"}`}>
                   {returnContribution >= 0 ? "+" : "-"}{Math.abs(returnContribution).toFixed(2)}%
                 </td>
               </tr>

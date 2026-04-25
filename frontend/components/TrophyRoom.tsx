@@ -30,11 +30,11 @@ export function TrophyRoom() {
       .finally(() => setLoading(false));
   }, []);
 
-  if (loading) return <div className="p-4 text-slate-400 text-sm">Loading trophies...</div>;
+  if (loading) return <div className="p-4 text-slate-400 dark:text-slate-500 text-sm">Loading trophies...</div>;
 
   return (
-    <div className="rounded-3xl border border-slate-100 bg-white p-6 shadow-xl">
-      <h2 className="mb-4 text-lg font-bold text-slate-800 flex items-center gap-2">
+    <div className="rounded-3xl border border-slate-100 dark:border-slate-700 bg-white dark:bg-slate-800 p-6 shadow-xl">
+      <h2 className="mb-4 text-lg font-bold text-slate-800 dark:text-slate-100 flex items-center gap-2">
         <span className="text-xl">🏆</span> Trophy Room
       </h2>
       <div className="grid grid-cols-2 gap-4 sm:grid-cols-3">
@@ -44,12 +44,12 @@ export function TrophyRoom() {
             <div 
               key={type}
               className={`flex flex-col items-center justify-center rounded-2xl p-4 text-center transition-all ${
-                isUnlocked ? "bg-blue-50 border border-blue-100 shadow-sm" : "bg-slate-50 opacity-40 grayscale"
+                isUnlocked ? "bg-blue-50 dark:bg-blue-900/20 border border-blue-100 dark:border-blue-800/40 shadow-sm" : "bg-slate-50 dark:bg-slate-700/50 opacity-40 grayscale"
               }`}
             >
               <div className="mb-2 text-2xl">{meta.icon}</div>
-              <div className="text-sm font-bold text-slate-800">{meta.label}</div>
-              <div className="text-xs text-slate-500 mt-1 leading-tight">{meta.desc}</div>
+              <div className="text-sm font-bold text-slate-800 dark:text-slate-200">{meta.label}</div>
+              <div className="text-xs text-slate-500 dark:text-slate-400 mt-1 leading-tight">{meta.desc}</div>
             </div>
           );
         })}

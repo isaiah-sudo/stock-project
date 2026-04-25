@@ -46,7 +46,7 @@ export default function LeaderboardPage() {
 
       <section
         id="leaderboard-table"
-        className={`rounded-[2rem] bg-white p-6 shadow-sm border border-slate-200 ${
+        className={`rounded-[2rem] bg-white dark:bg-slate-800 p-6 shadow-sm border border-slate-200 dark:border-slate-700 ${
           activeTutorialTarget === "leaderboard-table"
             ? "ring-4 ring-blue-300 ring-offset-2"
             : ""
@@ -65,7 +65,7 @@ export default function LeaderboardPage() {
       >
         <a
           href="/dashboard"
-          className="inline-flex items-center gap-2 rounded-2xl border border-slate-200 bg-white px-6 py-3 font-semibold text-slate-700 shadow-sm hover:bg-slate-50 transition-all font-sans"
+          className="inline-flex items-center gap-2 rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 px-6 py-3 font-semibold text-slate-700 dark:text-slate-200 shadow-sm hover:bg-slate-50 dark:hover:bg-slate-700 transition-all font-sans"
         >
           &larr; Return to Dashboard
         </a>

@@ -2,7 +2,7 @@
 
 import { MouseEvent, useRef, useState } from "react";
 
-export function TrophyCard({ rank, icon, label }: { rank: 1 | 2 | 3; icon: string; label: string; }) {
+export function TrophyCard({ rank, icon, label, desc }: { rank: 1 | 2 | 3; icon: string; label: string; desc?: string }) {
   const cardRef = useRef<HTMLDivElement>(null);
   const [rotation, setRotation] = useState({ x: 0, y: 0 });
   const [isHovering, setIsHovering] = useState(false);
@@ -58,6 +58,17 @@ export function TrophyCard({ rank, icon, label }: { rank: 1 | 2 | 3; icon: strin
       >
         {label}
       </div>
+      {/* Description tooltip on hover */}
+      {desc && (
+        <div
+          className={`absolute -bottom-1 left-1/2 -translate-x-1/2 translate-y-full z-20 w-40 rounded-xl bg-slate-900 dark:bg-slate-700 px-3 py-2 text-[11px] font-medium text-white text-center shadow-lg transition-all duration-200 pointer-events-none ${
+            isHovering ? "opacity-100 scale-100" : "opacity-0 scale-95"
+          }`}
+        >
+          {desc}
+          <div className="absolute -top-1 left-1/2 -translate-x-1/2 w-2 h-2 bg-slate-900 dark:bg-slate-700 rotate-45" />
+        </div>
+      )}
     </div>
   );
 }

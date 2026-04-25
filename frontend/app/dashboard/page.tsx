@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef, useCallback, useMemo } from "react";
 import dynamic from "next/dynamic";
 import type { Portfolio } from "@stock/shared";
 import { apiFetch } from "../../lib/api";
@@ -40,12 +40,53 @@ export default function DashboardPage() {
   const [isSummaryExpanded, setIsSummaryExpanded] = useState(false);
   const [achievements, setAchievements] = useState<Achievement[]>([]);
   const [bgEffect, setBgEffect] = useState<BackgroundEffect>("solid");
+  const hasCountedUp = useRef(false);
+  const [displayNetWorth, setDisplayNetWorth] = useState(0);
+  const [displayDayPerf, setDisplayDayPerf] = useState(0);
 
   const initialBalance = 10000;
   const marketValue = portfolio ? portfolio.totalValue - portfolio.cashBalance : 0;
   const totalPerformanceDollar = portfolio ? portfolio.totalValue - initialBalance : 0;
   const totalPerformancePct = portfolio ? Number(((totalPerformanceDollar / initialBalance) * 100).toFixed(2)) : 0;
   const dayPerformanceDollar = portfolio?.dayChangeDollar ?? 0;
+
+  // Count-up animation on first portfolio load
+  useEffect(() => {
+    if (!portfolio || hasCountedUp.current) return;
+    hasCountedUp.current = true;
+    const targetNetWorth = portfolio.totalValue;
+    const targetDayPerf = portfolio.dayChangeDollar ?? 0;
+    const duration = 1200; // ms
+    const steps = 60;
+    const interval = duration / steps;
+    let step = 0;
+    const timer = setInterval(() => {
+      step++;
+      const progress = Math.min(step / steps, 1);
+      // Ease-out cubic
+      const eased = 1 - Math.pow(1 - progress, 3);
+      setDisplayNetWorth(eased * targetNetWorth);
+      setDisplayDayPerf(eased * targetDayPerf);
+      if (step >= steps) {
+        clearInterval(timer);
+        setDisplayNetWorth(targetNetWorth);
+        setDisplayDayPerf(targetDayPerf);
+      }
+    }, interval);
+    return () => clearInterval(timer);
+  }, [portfolio]);
+
+  // Memoize bubble data so positions are stable across re-renders (prevents disappear/reappear)
+  const bubbleData = useMemo(() =>
+    Array.from({ length: 16 }, (_, i) => ({
+      size: Math.round(20 + (((i * 7 + 13) % 17) / 17) * 35),  // 20-55px
+      left: 3 + (((i * 31 + 5) % 23) / 23) * 94,               // 3-97%
+      delay: i * 1.3 + (((i * 11 + 3) % 7) / 7) * 2,           // staggered
+      duration: 14 + (((i * 13 + 7) % 11) / 11) * 10,           // 14-24s
+      sway: 15 + (((i * 17 + 2) % 13) / 13) * 40,              // 15-55px
+      opacity: 0.18 + (((i * 19 + 1) % 9) / 9) * 0.12,         // 0.18-0.30
+    })),
+  []);
 
   function formatCurrency(value: number) {
     return `$${value.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
@@ -154,26 +195,23 @@ export default function DashboardPage() {
     <div className={`relative transition-colors duration-1000 ${backgroundClass} overflow-hidden`}>
       {bgEffect === "bubbles" && (
         <div className="pointer-events-none absolute inset-0 overflow-hidden z-0">
-          {Array.from({ length: 18 }).map((_, i) => {
-            const size = Math.round(Math.random() * 30 + 8);
-            return (
-              <div
-                key={`bubble-${i}`}
-                className={`absolute top-0 rounded-full ${effectColorClass} opacity-0 animate-bubble-down`}
-                style={{
-                  left: `${Math.random() * 96 + 2}%`,
-                  width: `${size}px`,
-                  height: `${size}px`,
-                  // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-                  // @ts-ignore
-                  "--delay": `${(i * 1.2) + Math.random() * 2}s`,
-                  "--duration": `${Math.random() * 8 + 12}s`,
-                  "--sway": `${Math.random() * 40 + 15}px`,
-                  "--bubble-opacity": `${Math.random() * 0.08 + 0.08}`,
-                }}
-              />
-            );
-          })}
+          {bubbleData.map((b, i) => (
+            <div
+              key={`bubble-${i}`}
+              className={`absolute top-0 rounded-full ${effectColorClass} opacity-0 animate-bubble-down`}
+              style={{
+                left: `${b.left}%`,
+                width: `${b.size}px`,
+                height: `${b.size}px`,
+                // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+                // @ts-ignore
+                "--delay": `${b.delay}s`,
+                "--duration": `${b.duration}s`,
+                "--sway": `${b.sway}px`,
+                "--bubble-opacity": `${b.opacity}`,
+              }}
+            />
+          ))}
         </div>
       )}
 
@@ -223,33 +261,26 @@ export default function DashboardPage() {
                       Net Worth
                       {isEducational && <LearnMore title="Net Worth" content="The total value of all your cash and stock investments combined. This is your total wealth in the simulator." />}
                     </p>
-                    <div className="text-2xl font-black text-slate-900 dark:text-slate-100 sm:text-3xl">{formatCurrency(portfolio.totalValue)}</div>
+                    <div className="text-2xl font-black text-slate-900 dark:text-slate-100 sm:text-3xl font-num">{formatCurrency(displayNetWorth)}</div>
                   </div>
                 </div>
                 <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-4">
                   <div>
                     <p className="text-sm font-semibold text-slate-500 dark:text-slate-400">
-                      Available Cash
-                      {isEducational && <LearnMore title="Available Cash" content="The money you have 'on hand' to buy new stocks. It doesn't include the value of stocks you already own." />}
-                    </p>
-                    <p className="text-xl font-bold text-slate-900 dark:text-slate-100 sm:text-2xl">{formatCurrency(portfolio.cashBalance)}</p>
-                  </div>
-                  <div>
-                    <p className="text-sm font-semibold text-slate-500 dark:text-slate-400">
                       Market Value
                       {isEducational && <LearnMore title="Market Value" content="The current total worth of all the stocks you own if you were to sell them right now." />}
                     </p>
-                    <p className="text-xl font-bold text-slate-900 dark:text-slate-100 sm:text-2xl">{formatCurrency(marketValue)}</p>
+                    <p className="text-xl font-bold text-slate-900 dark:text-slate-100 sm:text-2xl font-num">{formatCurrency(marketValue)}</p>
                   </div>
                   <div>
                     <p className="text-sm font-semibold text-slate-500 dark:text-slate-400">
                       Total Performance
                       {isEducational && <LearnMore title="Total Performance" content="How much your account has grown (or shrunk) since you started with your initial $10,000 balance." />}
                     </p>
-                    <p className={`text-xl font-bold sm:text-2xl ${totalPerformanceDollar >= 0 ? "text-emerald-600" : "text-rose-600"}`}>
+                    <p className={`text-xl font-bold sm:text-2xl font-num ${totalPerformanceDollar >= 0 ? "text-emerald-600" : "text-rose-600"}`}>
                       {totalPerformanceDollar >= 0 ? "+" : ""}{formatCurrency(totalPerformanceDollar)}
                     </p>
-                    <p className="text-sm text-slate-500 dark:text-slate-400">
+                    <p className="text-sm text-slate-500 dark:text-slate-400 font-num">
                       {totalPerformancePct >= 0 ? "+" : ""}{totalPerformancePct.toFixed(2)}%
                     </p>
                   </div>
@@ -258,12 +289,19 @@ export default function DashboardPage() {
                       Day Performance
                       {isEducational && <LearnMore title="Day Performance" content="How much your portfolio value changed specifically since the market opened today." />}
                     </p>
-                    <p className={`text-xl font-bold sm:text-2xl ${dayPerformanceDollar >= 0 ? "text-emerald-600" : "text-rose-600"}`}>
-                      {dayPerformanceDollar >= 0 ? "+" : ""}{formatCurrency(dayPerformanceDollar)}
+                    <p className={`text-xl font-bold sm:text-2xl font-num ${dayPerformanceDollar >= 0 ? "text-emerald-600" : "text-rose-600"}`}>
+                      {dayPerformanceDollar >= 0 ? "+" : ""}{formatCurrency(displayDayPerf)}
                     </p>
-                    <p className="text-sm text-slate-500 dark:text-slate-400">
+                    <p className="text-sm text-slate-500 dark:text-slate-400 font-num">
                       {portfolio.dayChangePct >= 0 ? "+" : ""}{portfolio.dayChangePct.toFixed(2)}%
                     </p>
+                  </div>
+                  <div>
+                    <p className="text-sm font-semibold text-slate-500 dark:text-slate-400">
+                      Available Cash
+                      {isEducational && <LearnMore title="Available Cash" content="The money you have 'on hand' to buy new stocks. It doesn't include the value of stocks you already own." />}
+                    </p>
+                    <p className="text-xl font-bold text-slate-900 dark:text-slate-100 sm:text-2xl font-num">{formatCurrency(portfolio.cashBalance)}</p>
                   </div>
                 </div>
 
@@ -280,7 +318,7 @@ export default function DashboardPage() {
                       {/* Left: XP & Progress */}
                       <div className="flex flex-col justify-center sm:w-1/3 sm:border-r sm:border-slate-200/60 dark:sm:border-slate-600/60 sm:pr-6">
                         <div className="text-xs font-bold uppercase tracking-widest text-slate-400 mb-2">Your Experience</div>
-                        <div className="flex items-baseline gap-2 text-4xl font-black text-blue-600 dark:text-blue-400 drop-shadow-sm">
+                        <div className="flex items-baseline gap-2 text-4xl font-black text-blue-600 dark:text-blue-400 drop-shadow-sm font-num">
                           {portfolio.experiencePoints || 0} <span className="text-xl font-bold text-slate-500 dark:text-slate-400">XP</span>
                         </div>
                         {/* Progress Bar */}
@@ -308,14 +346,14 @@ export default function DashboardPage() {
                         <div className="mb-4 text-xs font-bold uppercase tracking-widest text-slate-400">Top Trophies</div>
                         <div className="flex flex-1 items-center justify-around gap-2">
                           {(() => {
-                            const ACHIEVEMENT_META: Record<string, { label: string; icon: string }> = {
-                              WHALE: { label: "Whale", icon: "🐋" },
-                              ALL_STAR: { label: "All Star", icon: "🌟" },
-                              BULL_RUN: { label: "Bull Run", icon: "🐂" },
-                              PROFIT_TAKER: { label: "Profit Taker", icon: "💰" },
-                              DIVERSIFIED: { label: "Diversified", icon: "🌍" },
-                              TEN_PCT_GAIN: { label: "Investor", icon: "📈" },
-                              FIRST_TRADE: { label: "First Trade", icon: "🤝" },
+                            const ACHIEVEMENT_META: Record<string, { label: string; icon: string; desc: string }> = {
+                              WHALE: { label: "Whale", icon: "🐋", desc: "Executed a $10k+ trade" },
+                              ALL_STAR: { label: "All Star", icon: "🌟", desc: "Doubled your initial capital" },
+                              BULL_RUN: { label: "Bull Run", icon: "🐂", desc: "Reach $50k market value" },
+                              PROFIT_TAKER: { label: "Profit Taker", icon: "💰", desc: "Sold a stock for a gain" },
+                              DIVERSIFIED: { label: "Diversified", icon: "🌍", desc: "Hold 5+ different assets" },
+                              TEN_PCT_GAIN: { label: "Investor", icon: "📈", desc: "Reached 10% portfolio growth" },
+                              FIRST_TRADE: { label: "First Trade", icon: "🤝", desc: "Executed your first order" },
                             };
                             
                             const unlockedMeta = achievements
@@ -329,7 +367,7 @@ export default function DashboardPage() {
                             }
                             
                             return topThree.map((meta, i) => (
-                              <TrophyCard key={meta.label} rank={(i + 1) as 1|2|3} icon={meta.icon} label={meta.label} />
+                              <TrophyCard key={meta.label} rank={(i + 1) as 1|2|3} icon={meta.icon} label={meta.label} desc={meta.desc} />
                             ));
                           })()}
                         </div>

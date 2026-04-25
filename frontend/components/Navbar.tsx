@@ -122,7 +122,7 @@ export function Navbar({ onChatClick, experiencePoints }: NavbarProps) {
               <span className="text-xs font-bold text-slate-700 dark:text-slate-200">{currentLevel.label}</span>
             </div>
             <div className="flex flex-col gap-0.5">
-              <span className="text-[10px] font-black uppercase tracking-wide text-blue-600">{xp} XP</span>
+              <span className="text-[10px] font-black uppercase tracking-wide text-blue-600 font-num">{xp} XP</span>
               <div className="h-1 w-16 overflow-hidden rounded-full bg-slate-200 dark:bg-slate-600">
                 <div className="h-full bg-blue-500 transition-all duration-1000" style={{ width: `${progress}%` }} />
               </div>
