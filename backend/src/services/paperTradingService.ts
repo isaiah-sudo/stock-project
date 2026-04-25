@@ -11,12 +11,8 @@ type SupportedSymbol =
   "RBLX" | "PEP" | "KO" | "BAC" | "T" | "VZ" | "PFE" | "MRK" | "ABBV" | "ORCL" | "CSCO" |
   "ACN" | "TXN" | "QCOM" | "MU" | "AMAT" | "UBER" | "ABNB" | "SHOP" | "SE" | "MELI" | "TSM";
 
-interface Position {
-  symbol: SupportedSymbol;
-  name: string;
-  quantity: number;
-  averageCost: number;
-}
+type HistoryTimeframe = "1D" | "1W" | "1M" | "ALL";
+type BenchmarkSymbol = "SPY" | "QQQ";
 
 interface LiveQuote {
   symbol: SupportedSymbol;
@@ -30,6 +26,16 @@ interface LiveQuote {
 interface CachedQuote {
   quote: LiveQuote;
   cachedAt: number;
+}
+
+interface PortfolioHistoryPoint {
+  timestamp: string;
+  total_market_value: number;
+}
+
+interface BenchmarkHistoryPoint {
+  timestamp: string;
+  price: number | null;
 }
 
 const SYMBOL_META: Record<SupportedSymbol, { name: string; basePrice: number }> = {
@@ -129,16 +135,13 @@ class PaperTradingService {
 
   isMarketOpen(): boolean {
     const now = new Date();
-    // Convert current time to EST (New York Time)
     const estDate = new Date(now.toLocaleString("en-US", { timeZone: "America/New_York" }));
-    const day = estDate.getDay(); // 0 is Sunday, 6 is Saturday
+    const day = estDate.getDay();
     const hours = estDate.getHours();
     const minutes = estDate.getMinutes();
 
-    // Weekend check
     if (day === 0 || day === 6) return false;
 
-    // Market hours: 9:30 AM - 4:00 PM EST
     const timeInMinutes = hours * 60 + minutes;
     const openTime = 9 * 60 + 30;
     const closeTime = 16 * 60;
@@ -209,6 +212,7 @@ class PaperTradingService {
       if (!data.currentPrice || data.currentPrice <= 0) {
         throw new Error("Missing live quote price");
       }
+
       const quote: LiveQuote = {
         symbol: normalized,
         name: data.name ?? SYMBOL_META[normalized].name,
@@ -232,13 +236,11 @@ class PaperTradingService {
     side: "buy" | "sell";
     quantity: number;
   }) {
-    // ✅ FETCH QUOTE OUTSIDE TRANSACTION (external API call)
     const quote = await this.getQuote(args.symbol);
     if (!quote) {
       return { ok: false as const, error: `Unsupported symbol. Use: ${SUPPORTED_SYMBOLS.join(", ")}` };
     }
 
-    // ✅ FETCH ACCOUNT OUTSIDE TRANSACTION
     const account = await prisma.paperAccount.findUnique({
       where: { userId: args.userId },
       include: { positions: true }
@@ -253,19 +255,18 @@ class PaperTradingService {
     }
 
     const notional = Number((quote.currentPrice * quantity).toFixed(2));
-    const position = account.positions.find(p => p.symbol === quote.symbol);
+    const position = account.positions.find((p: { symbol: string }) => p.symbol === quote.symbol);
 
-    // ✅ CHECK WHALE ACHIEVEMENT OUTSIDE TRANSACTION
-    if (notional >= 10000) {
+    if (notional >= 10_000) {
       await this.unlockAchievement(args.userId, "WHALE");
     }
 
-    // ✅ ONLY DB WORK INSIDE TRANSACTION
-    return await prisma.$transaction(async (tx) => {
+    const result = await prisma.$transaction(async (tx: any) => {
       if (args.side === "buy") {
         if (account.cashBalance < notional) {
           return { ok: false as const, error: "Insufficient cash balance for this trade." };
         }
+
         const prevQty = position?.quantity ?? 0;
         const prevCost = position?.averageCost ?? 0;
         const newQty = prevQty + quantity;
@@ -297,8 +298,8 @@ class PaperTradingService {
         if (heldQty < quantity) {
           return { ok: false as const, error: "Not enough shares to sell." };
         }
-        const remaining = heldQty - quantity;
 
+        const remaining = heldQty - quantity;
         if (remaining === 0) {
           await tx.paperPosition.delete({
             where: { id: position!.id }
@@ -315,7 +316,6 @@ class PaperTradingService {
           data: { cashBalance: { increment: notional } }
         });
 
-        // ✅ SIMPLIFIED: Only award XP for profitable sale, no market value calc
         if (position && quote.currentPrice > position.averageCost) {
           await tx.user.update({
             where: { id: args.userId },
@@ -338,18 +338,16 @@ class PaperTradingService {
         where: { userId: args.userId }
       });
 
-      // Track FIRST_TRADE achievement
       try {
         await tx.achievement.upsert({
           where: { userId_type: { userId: args.userId, type: "FIRST_TRADE" } },
           update: {},
           create: { userId: args.userId, type: "FIRST_TRADE" }
         });
-      } catch (e) {
-        // Achievement already exists or other error
+      } catch {
+        // no-op
       }
 
-      // ✅ SIMPLIFIED: Award 10 XP directly without calling awardXP
       await tx.user.update({
         where: { id: args.userId },
         data: { experiencePoints: { increment: 10 } }
@@ -368,11 +366,14 @@ class PaperTradingService {
         cashBalance: updatedAccount!.cashBalance
       };
     });
+
+    if (result.ok) {
+      await this.recordPortfolioSnapshot(args.userId, { force: true });
+    }
+
+    return result;
   }
 
-  /**
-   * Internal helper to award XP. Simplified to only update XP without heavy logic.
-   */
   private async awardXP(tx: any, userId: string, amount: number) {
     try {
       await tx.user.update({
@@ -384,14 +385,8 @@ class PaperTradingService {
     }
   }
 
-  /**
-   * Calculate market value using batch quote fetches (Promise.all).
-   */
-  private async calculateMarketValue(positions: any[]): Promise<number> {
-    // ✅ BATCH FETCH: Use Promise.all instead of sequential loop
-    const quotes = await Promise.all(
-      positions.map(pos => this.getQuote(pos.symbol))
-    );
+  private async calculateMarketValue(positions: Array<{ symbol: string; quantity: number; averageCost: number }>) {
+    const quotes = await Promise.all(positions.map(pos => this.getQuote(pos.symbol)));
 
     let value = 0;
     for (let i = 0; i < positions.length; i++) {
@@ -399,27 +394,58 @@ class PaperTradingService {
       const price = quote?.currentPrice ?? positions[i].averageCost;
       value += positions[i].quantity * price;
     }
-    return value;
+
+    return Number(value.toFixed(2));
   }
 
-  async getPortfolio(userId: string): Promise<Portfolio | null> {
+  private getHistoryConfig(timeframe: HistoryTimeframe) {
+    switch (timeframe) {
+      case "1D":
+        return { durationMs: 24 * 60 * 60 * 1000, bucketMs: 15 * 60 * 1000 };
+      case "1W":
+        return { durationMs: 7 * 24 * 60 * 60 * 1000, bucketMs: 60 * 60 * 1000 };
+      case "1M":
+        return { durationMs: 30 * 24 * 60 * 60 * 1000, bucketMs: 24 * 60 * 60 * 1000 };
+      case "ALL":
+        return { durationMs: 90 * 24 * 60 * 60 * 1000, bucketMs: 7 * 24 * 60 * 60 * 1000 };
+    }
+  }
+
+  private bucketTimestamp(timestamp: number, bucketMs: number) {
+    return Math.floor(timestamp / bucketMs) * bucketMs;
+  }
+
+  private isAfterMarketClose(date: Date) {
+    const etDate = new Date(date.toLocaleString("en-US", { timeZone: "America/New_York" }));
+    return etDate.getHours() * 60 + etDate.getMinutes() >= 16 * 60;
+  }
+
+  private getEtDayKey(date: Date) {
+    return date.toLocaleDateString("en-US", { timeZone: "America/New_York" });
+  }
+
+  private async buildLivePortfolioState(userId: string) {
     const account = await prisma.paperAccount.findUnique({
       where: { userId },
       include: { positions: true }
     });
-    if (!account?.linked) return null;
+    if (!account?.linked) {
+      return null;
+    }
 
-    // ✅ BATCH QUOTE FETCHES
     const quotes = await Promise.all(
-      account.positions.map(position => this.getQuote(position.symbol))
+      account.positions.map((position: { symbol: string }) => this.getQuote(position.symbol))
     );
-
-    const holdings = account.positions.map((position, index) => {
+    const holdings = account.positions.map((
+      position: { symbol: string; name: string; quantity: number; averageCost: number },
+      index: number
+    ) => {
       const quote = quotes[index];
       const currentPrice = quote?.currentPrice ?? position.averageCost;
       const changePct =
         quote?.changePct ??
         Number((((currentPrice - position.averageCost) / position.averageCost) * 100).toFixed(2));
+
       return {
         symbol: position.symbol,
         name: quote?.name ?? position.name,
@@ -435,9 +461,121 @@ class PaperTradingService {
       holdings
     });
 
-    // ✅ CHECK ACHIEVEMENTS OUTSIDE main data fetching (fire & forget)
+    return {
+      account,
+      holdings,
+      totalValue,
+      holdingsValue: Number((totalValue - account.cashBalance).toFixed(2)),
+      dayChangePct,
+      dayChangeDollar
+    };
+  }
+
+  private async recordPortfolioSnapshot(
+    userId: string,
+    options?: { force?: boolean; totalMarketValue?: number }
+  ) {
+    const latestSnapshot = await prisma.portfolioSnapshot.findFirst({
+      where: { userId },
+      orderBy: { timestamp: "desc" }
+    });
+
+    const now = new Date();
+    const shouldCreate =
+      options?.force === true ||
+      !latestSnapshot ||
+      (this.isMarketOpen() && now.getTime() - latestSnapshot.timestamp.getTime() >= 60 * 60 * 1000) ||
+      this.getEtDayKey(latestSnapshot.timestamp) !== this.getEtDayKey(now) ||
+      (this.isAfterMarketClose(now) && !this.isAfterMarketClose(latestSnapshot.timestamp));
+
+    if (!shouldCreate) {
+      return latestSnapshot;
+    }
+
+    let totalMarketValue = options?.totalMarketValue;
+    if (totalMarketValue === undefined) {
+      const account = await prisma.paperAccount.findUnique({
+        where: { userId },
+        include: { positions: true }
+      });
+      totalMarketValue = account?.linked ? await this.calculateMarketValue(account.positions) : 0;
+    }
+
+    return prisma.portfolioSnapshot.create({
+      data: {
+        userId,
+        totalMarketValue: Number(totalMarketValue.toFixed(2))
+      }
+    });
+  }
+
+  private async getBenchmarkHistory(symbol: BenchmarkSymbol, timeframe: HistoryTimeframe) {
+    try {
+      const response = await fetch(
+        `${this.quoteServiceBaseUrl}/history?symbol=${encodeURIComponent(symbol)}&timeframe=${timeframe}`
+      );
+      if (!response.ok) {
+        throw new Error(`History service failed: ${response.status}`);
+      }
+
+      const data = (await response.json()) as {
+        points?: Array<{ timestamp: string; price: number }>;
+      };
+
+      return (data.points ?? []).filter(point => Number.isFinite(point.price));
+    } catch {
+      const quote = await this.getQuote(symbol);
+      return quote ? [{ timestamp: new Date().toISOString(), price: quote.currentPrice }] : [];
+    }
+  }
+
+  private alignHistorySeries(args: {
+    portfolioHistory: PortfolioHistoryPoint[];
+    benchmarkHistory: Array<{ timestamp: string; price: number }>;
+    bucketMs: number;
+  }) {
+    const { portfolioHistory, benchmarkHistory, bucketMs } = args;
+    const benchmarkBuckets = benchmarkHistory.map(point => ({
+      bucket: this.bucketTimestamp(new Date(point.timestamp).getTime(), bucketMs),
+      price: point.price
+    }));
+
+    const alignedPortfolio: PortfolioHistoryPoint[] = [];
+    const alignedBenchmark: BenchmarkHistoryPoint[] = [];
+
+    for (const point of portfolioHistory) {
+      const bucket = this.bucketTimestamp(new Date(point.timestamp).getTime(), bucketMs);
+      let closestPrice: number | null = null;
+      let closestDistance = Number.POSITIVE_INFINITY;
+
+      for (const benchmarkPoint of benchmarkBuckets) {
+        const distance = Math.abs(benchmarkPoint.bucket - bucket);
+        if (distance < closestDistance) {
+          closestDistance = distance;
+          closestPrice = benchmarkPoint.price;
+        }
+      }
+
+      const timestamp = new Date(bucket).toISOString();
+      alignedPortfolio.push({ timestamp, total_market_value: point.total_market_value });
+      alignedBenchmark.push({ timestamp, price: closestPrice });
+    }
+
+    return {
+      portfolio_history: alignedPortfolio,
+      benchmark_history: alignedBenchmark
+    };
+  }
+
+  async getPortfolio(userId: string): Promise<Portfolio | null> {
+    const portfolioState = await this.buildLivePortfolioState(userId);
+    if (!portfolioState) return null;
+
+    const { account, holdings, totalValue, holdingsValue, dayChangePct, dayChangeDollar } = portfolioState;
+
     setImmediate(() => {
       this.checkPortfolioAchievements(userId, totalValue, account.positions);
+      this.recordPortfolioSnapshot(userId, { totalMarketValue: holdingsValue }).catch(() => undefined);
     });
 
     const user = await prisma.user.findUnique({
@@ -456,24 +594,23 @@ class PaperTradingService {
     };
   }
 
-  /**
-   * Check and unlock portfolio-based achievements (non-blocking).
-   */
   private async checkPortfolioAchievements(userId: string, totalValue: number, positions: any[]) {
     try {
-      if (totalValue >= 11000) {
+      if (totalValue >= 11_000) {
         await this.unlockAchievement(userId, "TEN_PCT_GAIN");
       }
-      if (totalValue >= 20000) {
+      if (totalValue >= 20_000) {
         await this.unlockAchievement(userId, "ALL_STAR");
       }
       if (positions.length >= 5) {
         await this.unlockAchievement(userId, "DIVERSIFIED");
       }
+
       const marketValue = await this.calculateMarketValue(positions);
-      if (marketValue >= 50000) {
+      if (marketValue >= 50_000) {
         await this.unlockAchievement(userId, "BULL_RUN");
       }
+
       const transactionCount = await prisma.paperTransaction.count({ where: { userId } });
       if (transactionCount >= 100) {
         await this.unlockAchievement(userId, "CENTURY_TRADER");
@@ -481,6 +618,57 @@ class PaperTradingService {
     } catch (e) {
       console.error(`Failed to check achievements for ${userId}:`, e);
     }
+  }
+
+  async getPerformanceHistory(userId: string, timeframe: HistoryTimeframe, benchmark: BenchmarkSymbol) {
+    const portfolioState = await this.buildLivePortfolioState(userId);
+    if (!portfolioState) {
+      return null;
+    }
+
+    await this.recordPortfolioSnapshot(userId, { totalMarketValue: portfolioState.holdingsValue });
+
+    const { durationMs, bucketMs } = this.getHistoryConfig(timeframe);
+    const snapshots = await prisma.portfolioSnapshot.findMany({
+      where: {
+        userId,
+        timestamp: {
+          gte: new Date(Date.now() - durationMs)
+        }
+      },
+      orderBy: { timestamp: "asc" }
+    });
+
+    const snapshotByBucket = new Map<number, PortfolioHistoryPoint>();
+    for (const snapshot of snapshots) {
+      const bucket = this.bucketTimestamp(snapshot.timestamp.getTime(), bucketMs);
+      snapshotByBucket.set(bucket, {
+        timestamp: new Date(bucket).toISOString(),
+        total_market_value: Number(snapshot.totalMarketValue.toFixed(2))
+      });
+    }
+
+    const currentBucket = this.bucketTimestamp(Date.now(), bucketMs);
+    snapshotByBucket.set(currentBucket, {
+      timestamp: new Date(currentBucket).toISOString(),
+      total_market_value: Number(portfolioState.holdingsValue.toFixed(2))
+    });
+
+    const portfolioHistory = Array.from(snapshotByBucket.values()).sort(
+      (a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime()
+    );
+    const benchmarkHistory = await this.getBenchmarkHistory(benchmark, timeframe);
+    const aligned = this.alignHistorySeries({ portfolioHistory, benchmarkHistory, bucketMs });
+
+    return {
+      timeframe,
+      benchmark: {
+        symbol: benchmark,
+        name: SYMBOL_META[benchmark].name
+      },
+      portfolio_history: aligned.portfolio_history,
+      benchmark_history: aligned.benchmark_history
+    };
   }
 
   async getTransactions(userId: string): Promise<Transaction[] | null> {
@@ -492,11 +680,18 @@ class PaperTradingService {
 
     const transactions = await prisma.paperTransaction.findMany({
       where: { userId },
-      orderBy: { occurredAt: 'desc' },
+      orderBy: { occurredAt: "desc" },
       take: 50
     });
 
-    return transactions.map(t => ({
+    return transactions.map((t: {
+      id: string;
+      symbol: string;
+      side: string;
+      quantity: number;
+      price: number;
+      occurredAt: Date;
+    }) => ({
       id: t.id,
       symbol: t.symbol,
       side: t.side as "buy" | "sell",
@@ -514,20 +709,25 @@ class PaperTradingService {
       }
     });
 
-    // ✅ BATCH ALL QUOTE FETCHES for all accounts
-    const allPositions = accounts.flatMap(acc => acc.positions);
-    const uniqueSymbols = Array.from(new Set(allPositions.map(p => p.symbol)));
+    const allPositions = accounts.flatMap((acc: {
+      positions: Array<{ symbol: string; quantity: number; averageCost: number }>;
+    }) => acc.positions);
+    const uniqueSymbols = Array.from(
+      new Set(allPositions.map((p: { symbol: string }) => p.symbol))
+    ) as string[];
     const quoteMap = new Map<string, LiveQuote | null>();
 
-    const quotes = await Promise.all(
-      uniqueSymbols.map(symbol => this.getQuote(symbol))
-    );
-
+    const quotes = await Promise.all(uniqueSymbols.map((symbol: string) => this.getQuote(symbol)));
     for (let i = 0; i < uniqueSymbols.length; i++) {
       quoteMap.set(uniqueSymbols[i], quotes[i]);
     }
 
-    const rankings = accounts.map((account) => {
+    const rankings = accounts.map((account: {
+      userId: string;
+      cashBalance: number;
+      positions: Array<{ symbol: string; quantity: number; averageCost: number }>;
+      user: { email: string; experiencePoints: number };
+    }) => {
       let holdingsValue = 0;
       for (const pos of account.positions) {
         const quote = quoteMap.get(pos.symbol);
@@ -537,15 +737,14 @@ class PaperTradingService {
 
       return {
         userId: account.userId,
-        email: account.user.email.split("@")[0], // Mask email for privacy
+        email: account.user.email.split("@")[0],
         totalValue: Number((account.cashBalance + holdingsValue).toFixed(2)),
         exp: account.user.experiencePoints,
-        // Blended Score: (Net Worth - Initial Cash) + (XP * 50)
         score: Number((account.cashBalance + holdingsValue - 100000).toFixed(2)) + (account.user.experiencePoints * 50)
       };
     });
 
-    return rankings.sort((a, b) => b.score - a.score).slice(0, 20);
+    return rankings.sort((a: { score: number }, b: { score: number }) => b.score - a.score).slice(0, 20);
   }
 
   async unlockAchievement(userId: string, type: string, txClient?: any) {
@@ -558,7 +757,6 @@ class PaperTradingService {
         await tx.achievement.create({
           data: { userId, type }
         });
-        // Award 50 XP for unlocking an achievement
         await this.awardXP(tx, userId, 50);
       }
     };
@@ -567,7 +765,7 @@ class PaperTradingService {
       if (txClient) {
         await execute(txClient);
       } else {
-        await prisma.$transaction(async (tx) => {
+        await prisma.$transaction(async (tx: any) => {
           await execute(tx);
         });
       }

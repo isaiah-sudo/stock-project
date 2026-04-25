@@ -99,3 +99,67 @@ def quote(
 
     quote_data["asOf"] = datetime.now(timezone.utc).isoformat()
     return quote_data
+
+
+def _history_config(timeframe: str):
+    normalized = timeframe.upper()
+    configs = {
+        "1D": {"period": "1d", "interval": "15m"},
+        "1W": {"period": "5d", "interval": "1h"},
+        "1M": {"period": "1mo", "interval": "1d"},
+        "ALL": {"period": "3mo", "interval": "1wk"},
+    }
+    if normalized not in configs:
+        raise HTTPException(status_code=400, detail=f"Unsupported timeframe: {timeframe}")
+    return configs[normalized]
+
+
+@app.get("/history")
+def history(
+    symbol: str = Query(..., min_length=1),
+    timeframe: str = Query("1D", min_length=2),
+):
+    normalized = symbol.upper().strip()
+    if normalized not in SUPPORTED_SYMBOLS:
+        raise HTTPException(status_code=400, detail=f"Unsupported symbol: {normalized}")
+
+    config = _history_config(timeframe)
+    ticker = yf.Ticker(normalized)
+    hist = ticker.history(
+        period=config["period"],
+        interval=config["interval"],
+        auto_adjust=False,
+        prepost=True,
+    )
+
+    if hist.empty:
+        raise HTTPException(status_code=503, detail="No historical data available")
+
+    points = []
+    for index, row in hist.iterrows():
+        timestamp = index.to_pydatetime()
+        if timestamp.tzinfo is None:
+            timestamp = timestamp.replace(tzinfo=timezone.utc)
+        else:
+            timestamp = timestamp.astimezone(timezone.utc)
+
+        close = row.get("Close")
+        if close is None:
+            continue
+
+        points.append(
+            {
+                "timestamp": timestamp.isoformat(),
+                "price": round(float(close), 2),
+            }
+        )
+
+    if not points:
+        raise HTTPException(status_code=503, detail="No historical data available")
+
+    return {
+        "symbol": normalized,
+        "timeframe": timeframe.upper(),
+        "points": points,
+        "asOf": datetime.now(timezone.utc).isoformat(),
+    }

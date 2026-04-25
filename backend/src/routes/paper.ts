@@ -52,6 +52,11 @@ const quoteSchema = z.object({
   symbol: z.string().min(1)
 });
 
+const performanceSchema = z.object({
+  timeframe: z.enum(["1D", "1W", "1M", "ALL"]).default("1D"),
+  benchmark: z.enum(["SPY", "QQQ"]).default("SPY")
+});
+
 router.get("/quote", requireAuth, async (req, res) => {
   const parsed = quoteSchema.safeParse(req.query);
   if (!parsed.success) {
@@ -62,6 +67,25 @@ router.get("/quote", requireAuth, async (req, res) => {
     return res.status(400).json({ error: "Unsupported symbol for paper trading." });
   }
   return res.json(quote);
+});
+
+router.get("/performance", requireAuth, async (req: AuthRequest, res) => {
+  const parsed = performanceSchema.safeParse(req.query);
+  if (!parsed.success) {
+    return res.status(400).json({ error: parsed.error.flatten() });
+  }
+
+  const history = await paperTradingService.getPerformanceHistory(
+    req.user!.userId,
+    parsed.data.timeframe,
+    parsed.data.benchmark
+  );
+
+  if (!history) {
+    return res.status(404).json({ error: "Paper account not linked." });
+  }
+
+  return res.json(history);
 });
 
 const orderSchema = z.object({

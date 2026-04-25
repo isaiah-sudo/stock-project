@@ -16,6 +16,7 @@ model User {
 
   paperAccount     PaperAccount?
   achievements     Achievement[]
+  portfolioSnapshots PortfolioSnapshot[]
 }
 
 model Achievement {
@@ -70,4 +71,16 @@ model PaperTransaction {
   account    PaperAccount @relation(fields: [userId], references: [userId], onDelete: Cascade)
 
   @@map("paper_transactions")
+}
+
+model PortfolioSnapshot {
+  id               String   @id @default(cuid())
+  userId           String
+  totalMarketValue Float
+  timestamp        DateTime @default(now())
+
+  user             User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, timestamp(sort: Desc)])
+  @@map("portfolio_snapshots")
 }
