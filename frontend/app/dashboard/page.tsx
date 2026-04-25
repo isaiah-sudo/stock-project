@@ -219,7 +219,7 @@ export default function DashboardPage() {
                 <div className="mb-6">
                   <div className="mb-3 text-lg font-bold text-emerald-500 dark:text-emerald-400 sm:text-xl">Financial Summary</div>
                   <div>
-                    <p className="text-sm font-semibold text-slate-500 mb-1">
+                    <p className="text-sm font-semibold text-slate-500 dark:text-slate-400 mb-1">
                       Net Worth
                       {isEducational && <LearnMore title="Net Worth" content="The total value of all your cash and stock investments combined. This is your total wealth in the simulator." />}
                     </p>
@@ -228,60 +228,60 @@ export default function DashboardPage() {
                 </div>
                 <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-4">
                   <div>
-                    <p className="text-sm font-semibold text-slate-500">
+                    <p className="text-sm font-semibold text-slate-500 dark:text-slate-400">
                       Available Cash
                       {isEducational && <LearnMore title="Available Cash" content="The money you have 'on hand' to buy new stocks. It doesn't include the value of stocks you already own." />}
                     </p>
-                    <p className="text-xl font-bold text-slate-900 sm:text-2xl">{formatCurrency(portfolio.cashBalance)}</p>
+                    <p className="text-xl font-bold text-slate-900 dark:text-slate-100 sm:text-2xl">{formatCurrency(portfolio.cashBalance)}</p>
                   </div>
                   <div>
-                    <p className="text-sm font-semibold text-slate-500">
+                    <p className="text-sm font-semibold text-slate-500 dark:text-slate-400">
                       Market Value
                       {isEducational && <LearnMore title="Market Value" content="The current total worth of all the stocks you own if you were to sell them right now." />}
                     </p>
-                    <p className="text-xl font-bold text-slate-900 sm:text-2xl">{formatCurrency(marketValue)}</p>
+                    <p className="text-xl font-bold text-slate-900 dark:text-slate-100 sm:text-2xl">{formatCurrency(marketValue)}</p>
                   </div>
                   <div>
-                    <p className="text-sm font-semibold text-slate-500">
+                    <p className="text-sm font-semibold text-slate-500 dark:text-slate-400">
                       Total Performance
                       {isEducational && <LearnMore title="Total Performance" content="How much your account has grown (or shrunk) since you started with your initial $10,000 balance." />}
                     </p>
                     <p className={`text-xl font-bold sm:text-2xl ${totalPerformanceDollar >= 0 ? "text-emerald-600" : "text-rose-600"}`}>
                       {totalPerformanceDollar >= 0 ? "+" : ""}{formatCurrency(totalPerformanceDollar)}
                     </p>
-                    <p className="text-sm text-slate-500">
+                    <p className="text-sm text-slate-500 dark:text-slate-400">
                       {totalPerformancePct >= 0 ? "+" : ""}{totalPerformancePct.toFixed(2)}%
                     </p>
                   </div>
                   <div>
-                    <p className="text-sm font-semibold text-slate-500">
+                    <p className="text-sm font-semibold text-slate-500 dark:text-slate-400">
                       Day Performance
                       {isEducational && <LearnMore title="Day Performance" content="How much your portfolio value changed specifically since the market opened today." />}
                     </p>
                     <p className={`text-xl font-bold sm:text-2xl ${dayPerformanceDollar >= 0 ? "text-emerald-600" : "text-rose-600"}`}>
                       {dayPerformanceDollar >= 0 ? "+" : ""}{formatCurrency(dayPerformanceDollar)}
                     </p>
-                    <p className="text-sm text-slate-500">
+                    <p className="text-sm text-slate-500 dark:text-slate-400">
                       {portfolio.dayChangePct >= 0 ? "+" : ""}{portfolio.dayChangePct.toFixed(2)}%
                     </p>
                   </div>
                 </div>
 
-                <div className="mt-4 flex flex-col items-center border-t border-slate-100 pt-2">
+                <div className="mt-4 flex flex-col items-center border-t border-slate-100 dark:border-slate-700 pt-2">
                   <button 
                     onClick={() => setIsSummaryExpanded(!isSummaryExpanded)}
-                    className="flex items-center gap-1 text-xs font-bold uppercase tracking-widest text-slate-400 hover:text-slate-600 transition"
+                    className="flex items-center gap-1 text-xs font-bold uppercase tracking-widest text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 transition"
                   >
                     {isSummaryExpanded ? "Hide Details ᐱ" : "Show XP & Trophies ᐯ"}
                   </button>
                   
                   <div className={`w-full overflow-hidden transition-all duration-500 ease-[cubic-bezier(0.23,1,0.32,1)] ${isSummaryExpanded ? "max-h-64 opacity-100 mt-6" : "max-h-0 opacity-0 mt-0"}`}>
-                    <div className="flex w-full flex-col sm:flex-row items-stretch gap-6 rounded-3xl bg-white/60 p-6 border border-slate-100 shadow-sm backdrop-blur-sm">
+                    <div className="flex w-full flex-col sm:flex-row items-stretch gap-6 rounded-3xl bg-white/60 dark:bg-slate-700/60 p-6 border border-slate-100 dark:border-slate-600 shadow-sm backdrop-blur-sm">
                       {/* Left: XP & Progress */}
-                      <div className="flex flex-col justify-center sm:w-1/3 sm:border-r sm:border-slate-200/60 sm:pr-6">
+                      <div className="flex flex-col justify-center sm:w-1/3 sm:border-r sm:border-slate-200/60 dark:sm:border-slate-600/60 sm:pr-6">
                         <div className="text-xs font-bold uppercase tracking-widest text-slate-400 mb-2">Your Experience</div>
-                        <div className="flex items-baseline gap-2 text-4xl font-black text-blue-600 drop-shadow-sm">
-                          {portfolio.experiencePoints || 0} <span className="text-xl font-bold text-slate-500">XP</span>
+                        <div className="flex items-baseline gap-2 text-4xl font-black text-blue-600 dark:text-blue-400 drop-shadow-sm">
+                          {portfolio.experiencePoints || 0} <span className="text-xl font-bold text-slate-500 dark:text-slate-400">XP</span>
                         </div>
                         {/* Progress Bar */}
                         {(() => {
@@ -291,11 +291,11 @@ export default function DashboardPage() {
                            const progress = getLevelProgress(xp);
                            return (
                              <div className="mt-4 w-full">
-                               <div className="flex items-center justify-between text-xs font-bold text-slate-500 mb-1">
+                               <div className="flex items-center justify-between text-xs font-bold text-slate-500 dark:text-slate-400 mb-1">
                                  <span className="flex items-center gap-1"><span className="text-sm">{currentLevel.icon}</span> {currentLevel.label}</span>
                                  {nextLevel && <span>Next: {nextLevel.label}</span>}
                                </div>
-                               <div className="h-2 w-full overflow-hidden rounded-full bg-slate-200">
+                               <div className="h-2 w-full overflow-hidden rounded-full bg-slate-200 dark:bg-slate-600">
                                  <div className="h-full bg-blue-500 transition-all duration-1000" style={{ width: `${progress}%` }} />
                                </div>
                              </div>
@@ -347,7 +347,7 @@ export default function DashboardPage() {
                 <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
                   <h2 className="text-xl font-bold sm:text-2xl dark:text-slate-100">Holdings Breakdown</h2>
                   <div className="flex flex-wrap items-center gap-3">
-                    <div className="flex items-center gap-2 text-sm">
+                    <div className="flex items-center gap-2 text-sm dark:text-slate-300">
                       <span className={`h-2 w-2 rounded-full ${marketOpen ? "bg-green-500" : "bg-red-500"}`}></span>
                       {marketOpen ? "Markets Open" : "Markets Closed"}
                     </div>
@@ -388,10 +388,10 @@ export default function DashboardPage() {
 
         {isTradeModalOpen && (
           <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-sm">
-            <div className="w-full max-w-xl relative rounded-[2rem] bg-white shadow-2xl border border-slate-100 overflow-hidden">
+            <div className="w-full max-w-xl relative rounded-[2rem] bg-white dark:bg-slate-800 shadow-2xl border border-slate-100 dark:border-slate-700 overflow-hidden">
               <button
                 onClick={() => setIsTradeModalOpen(false)}
-                className="absolute right-4 top-4 h-10 w-10 rounded-full bg-slate-100 text-slate-600 transition hover:bg-slate-200"
+                className="absolute right-4 top-4 h-10 w-10 rounded-full bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 transition hover:bg-slate-200 dark:hover:bg-slate-600"
               >
                 ✕
               </button>

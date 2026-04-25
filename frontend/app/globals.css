@@ -6,9 +6,13 @@ body {
   @apply bg-slate-50 text-slate-900;
 }
 
-.dark body,
+html.dark {
+  color-scheme: dark;
+}
+
 html.dark body {
-  @apply bg-slate-900 text-slate-100;
+  background-color: #0f172a; /* slate-900 */
+  color: #f1f5f9; /* slate-100 */
 }
 
 @keyframes tutorial-pulse {

@@ -52,24 +52,24 @@ export function HoldingsTable({ holdings }: { holdings: Holding[] }) {
 
   if (holdings.length === 0) {
     return (
-      <div className="rounded-2xl bg-white p-4 shadow">
-        <h3 className="mb-2 text-lg font-semibold">Holdings Breakdown</h3>
-        <p className="text-sm text-slate-500">No positions yet. Place a paper trade to see live holdings.</p>
+      <div className="rounded-2xl bg-white dark:bg-slate-800 p-4 shadow">
+        <h3 className="mb-2 text-lg font-semibold dark:text-slate-100">Holdings Breakdown</h3>
+        <p className="text-sm text-slate-500 dark:text-slate-400">No positions yet. Place a paper trade to see live holdings.</p>
       </div>
     );
   }
 
   return (
-    <div className="rounded-2xl bg-white p-4 shadow">
+    <div className="rounded-2xl bg-white dark:bg-slate-800 p-4 shadow">
       <div className="mb-3 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <h3 className="text-lg font-semibold">Holdings Breakdown</h3>
-        <div className="flex items-center gap-3 text-sm text-slate-500">
+        <h3 className="text-lg font-semibold dark:text-slate-100">Holdings Breakdown</h3>
+        <div className="flex items-center gap-3 text-sm text-slate-500 dark:text-slate-400">
           <label htmlFor="sortKey" className="font-medium">Sorted by</label>
           <select
             id="sortKey"
             value={sortKey}
             onChange={(event) => setSortKey(event.target.value)}
-            className="rounded-2xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-900 outline-none transition focus:border-blue-300 focus:ring-2 focus:ring-blue-100"
+            className="rounded-2xl border border-slate-200 dark:border-slate-600 bg-slate-50 dark:bg-slate-700 px-3 py-2 text-sm text-slate-900 dark:text-slate-200 outline-none transition focus:border-blue-300 focus:ring-2 focus:ring-blue-100"
           >
             {sortOptions.map((option) => (
               <option key={option.value} value={option.value}>
@@ -82,7 +82,7 @@ export function HoldingsTable({ holdings }: { holdings: Holding[] }) {
       <div className="overflow-x-auto">
         <table className="w-full text-sm">
           <thead>
-            <tr className="text-left text-slate-500">
+            <tr className="text-left text-slate-500 dark:text-slate-400">
               <th>Symbol</th>
               <th>Name</th>
               <th>Qty</th>
@@ -106,12 +106,12 @@ export function HoldingsTable({ holdings }: { holdings: Holding[] }) {
               const alloc = holdingsValue > 0 ? (marketValue / holdingsValue) * 100 : 0;
               const returnContribution = holdingsValue > 0 ? (alloc * pnlPct) / 100 : 0;
               return (
-              <tr key={h.symbol} className="border-t border-slate-100">
-                <td className="py-2 font-medium">{h.symbol}</td>
-                <td>{h.name}</td>
-                <td>{h.quantity}</td>
-                <td>${h.currentPrice.toFixed(2)}</td>
-                <td>${marketValue.toLocaleString(undefined, { maximumFractionDigits: 2 })}</td>
+              <tr key={h.symbol} className="border-t border-slate-100 dark:border-slate-700">
+                <td className="py-2 font-medium dark:text-slate-200">{h.symbol}</td>
+                <td className="dark:text-slate-300">{h.name}</td>
+                <td className="dark:text-slate-300">{h.quantity}</td>
+                <td className="dark:text-slate-300">${h.currentPrice.toFixed(2)}</td>
+                <td className="dark:text-slate-300">${marketValue.toLocaleString(undefined, { maximumFractionDigits: 2 })}</td>
                 <td className={dayPnl >= 0 ? "text-emerald-600" : "text-rose-600"}>
                   {dayPnl >= 0 ? "+" : "-"}${Math.abs(dayPnl).toLocaleString(undefined, { maximumFractionDigits: 2 })}
                 </td>

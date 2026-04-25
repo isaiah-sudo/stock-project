@@ -117,13 +117,13 @@ export function Navbar({ onChatClick, experiencePoints }: NavbarProps) {
         <div className="flex w-full flex-wrap items-center gap-2 sm:gap-4 lg:w-auto lg:justify-end">
           {/* Rank & XP Badge */}
           <div className="hidden sm:flex items-center gap-3 rounded-xl border border-slate-200 dark:border-slate-600 bg-slate-50 dark:bg-slate-700 px-3 py-1.5 shadow-sm transition hover:bg-slate-100 dark:hover:bg-slate-600">
-            <div className="flex items-center gap-1.5 border-r border-slate-200 pr-3">
+            <div className="flex items-center gap-1.5 border-r border-slate-200 dark:border-slate-600 pr-3">
               <span className="text-lg">{currentLevel.icon}</span>
               <span className="text-xs font-bold text-slate-700 dark:text-slate-200">{currentLevel.label}</span>
             </div>
             <div className="flex flex-col gap-0.5">
               <span className="text-[10px] font-black uppercase tracking-wide text-blue-600">{xp} XP</span>
-              <div className="h-1 w-16 overflow-hidden rounded-full bg-slate-200">
+              <div className="h-1 w-16 overflow-hidden rounded-full bg-slate-200 dark:bg-slate-600">
                 <div className="h-full bg-blue-500 transition-all duration-1000" style={{ width: `${progress}%` }} />
               </div>
             </div>
@@ -133,7 +133,7 @@ export function Navbar({ onChatClick, experiencePoints }: NavbarProps) {
           <div className="relative">
             <button
               onClick={() => setShowSettings(!showSettings)}
-              className="flex h-10 w-10 items-center justify-center rounded-xl border border-slate-200 bg-slate-50 text-slate-600 transition hover:bg-slate-100"
+              className="flex h-10 w-10 items-center justify-center rounded-xl border border-slate-200 dark:border-slate-600 bg-slate-50 dark:bg-slate-700 text-slate-600 dark:text-slate-300 transition hover:bg-slate-100 dark:hover:bg-slate-600"
               title="Settings"
             >
               ⚙️
@@ -161,26 +161,26 @@ export function Navbar({ onChatClick, experiencePoints }: NavbarProps) {
                     </button>
                   </div>
                   
-                  <div className="border-t border-slate-100 pt-3">
-                    <span className="text-xs font-bold text-slate-500 mb-2 block">Background Effect</span>
+                  <div className="border-t border-slate-100 dark:border-slate-600 pt-3">
+                    <span className="text-xs font-bold text-slate-500 dark:text-slate-400 mb-2 block">Background Effect</span>
                     <div className="flex gap-1">
                       <button 
                         onClick={() => { setBgEffect("solid"); setBackgroundEffect("solid"); }}
-                        className={`flex-1 rounded-lg py-1.5 text-center text-sm transition ${bgEffect === "solid" ? "bg-blue-100 text-blue-700 font-bold" : "bg-slate-50 text-slate-500 hover:bg-slate-100"}`}
+                        className={`flex-1 rounded-lg py-1.5 text-center text-sm transition ${bgEffect === "solid" ? "bg-blue-100 dark:bg-blue-900/40 text-blue-700 dark:text-blue-400 font-bold" : "bg-slate-50 dark:bg-slate-700 text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-600"}`}
                         title="Solid Gradient"
                       >
                         ⬛
                       </button>
                       <button 
                         onClick={() => { setBgEffect("bubbles"); setBackgroundEffect("bubbles"); }}
-                        className={`flex-1 rounded-lg py-1.5 text-center text-sm transition ${bgEffect === "bubbles" ? "bg-blue-100 text-blue-700 font-bold" : "bg-slate-50 text-slate-500 hover:bg-slate-100"}`}
+                        className={`flex-1 rounded-lg py-1.5 text-center text-sm transition ${bgEffect === "bubbles" ? "bg-blue-100 dark:bg-blue-900/40 text-blue-700 dark:text-blue-400 font-bold" : "bg-slate-50 dark:bg-slate-700 text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-600"}`}
                         title="Bubbles"
                       >
                         🫧
                       </button>
                       <button 
                         onClick={() => { setBgEffect("lights"); setBackgroundEffect("lights"); }}
-                        className={`flex-1 rounded-lg py-1.5 text-center text-sm transition ${bgEffect === "lights" ? "bg-blue-100 text-blue-700 font-bold" : "bg-slate-50 text-slate-500 hover:bg-slate-100"}`}
+                        className={`flex-1 rounded-lg py-1.5 text-center text-sm transition ${bgEffect === "lights" ? "bg-blue-100 dark:bg-blue-900/40 text-blue-700 dark:text-blue-400 font-bold" : "bg-slate-50 dark:bg-slate-700 text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-600"}`}
                         title="Pulsing Lights"
                       >
                         ✨
