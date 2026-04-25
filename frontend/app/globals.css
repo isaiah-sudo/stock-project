@@ -6,6 +6,11 @@ body {
   @apply bg-slate-50 text-slate-900;
 }
 
+.dark body,
+html.dark body {
+  @apply bg-slate-900 text-slate-100;
+}
+
 @keyframes tutorial-pulse {
   0% { box-shadow: 0 0 0 0 rgba(37, 99, 235, 0.4); }
   70% { box-shadow: 0 0 0 15px rgba(37, 99, 235, 0); }
@@ -53,19 +58,29 @@ iframe[class*="launcher" i] {
   z-index: 9999 !important;
 }
 
+/* Bubbles: gentle downward float with rhythmic side-to-side sway */
 @keyframes bubble-down {
   0% {
-    transform: translateY(-10vh) translateX(0) scale(1);
+    transform: translateY(-5%) translateX(0);
     opacity: 0;
   }
-  10% {
-    opacity: 0.6;
+  5% {
+    opacity: var(--bubble-opacity, 0.12);
   }
-  90% {
-    opacity: 0.6;
+  25% {
+    transform: translateY(25vh) translateX(var(--sway, 30px));
+  }
+  50% {
+    transform: translateY(50vh) translateX(0);
+  }
+  75% {
+    transform: translateY(75vh) translateX(calc(var(--sway, 30px) * -1));
+  }
+  95% {
+    opacity: var(--bubble-opacity, 0.12);
   }
   100% {
-    transform: translateY(110vh) translateX(20px) scale(1.5);
+    transform: translateY(105vh) translateX(0);
     opacity: 0;
   }
 }
@@ -82,7 +97,7 @@ iframe[class*="launcher" i] {
 }
 
 .animate-bubble-down {
-  animation: bubble-down var(--duration, 10s) ease-in-out infinite;
+  animation: bubble-down var(--duration, 14s) ease-in-out infinite;
   animation-delay: var(--delay, 0s);
 }
 

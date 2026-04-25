@@ -143,32 +143,37 @@ export default function DashboardPage() {
   const isUp = dayPerformanceDollar >= 0;
   const backgroundClass = portfolio 
     ? (isUp 
-        ? "bg-gradient-to-br from-amber-100 via-emerald-100/60 to-teal-100" 
-        : "bg-gradient-to-br from-slate-300 via-rose-200/60 to-slate-200")
-    : "bg-slate-50/50";
+        ? "bg-gradient-to-br from-amber-100 via-emerald-100/60 to-teal-100 dark:from-slate-900 dark:via-emerald-950/40 dark:to-slate-900" 
+        : "bg-gradient-to-br from-slate-300 via-rose-200/60 to-slate-200 dark:from-slate-900 dark:via-rose-950/40 dark:to-slate-900")
+    : "bg-slate-50/50 dark:bg-slate-900";
 
-  const effectColorClass = isUp ? "bg-emerald-400" : "bg-rose-400";
+  const effectColorClass = isUp ? "bg-emerald-400/60 dark:bg-emerald-500/40" : "bg-rose-400/60 dark:bg-rose-500/40";
   const lightColorClass = isUp ? "bg-emerald-300" : "bg-rose-300";
 
   return (
-    <div className={`relative min-h-screen transition-colors duration-1000 ${backgroundClass} overflow-hidden`}>
+    <div className={`relative transition-colors duration-1000 ${backgroundClass} overflow-hidden`}>
       {bgEffect === "bubbles" && (
         <div className="pointer-events-none absolute inset-0 overflow-hidden z-0">
-          {Array.from({ length: 15 }).map((_, i) => (
-            <div
-              key={`bubble-${i}`}
-              className={`absolute top-0 rounded-full ${effectColorClass} opacity-0 animate-bubble-down`}
-              style={{
-                left: `${Math.random() * 100}%`,
-                width: `${Math.random() * 40 + 10}px`,
-                height: `${Math.random() * 40 + 10}px`,
-                // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-                // @ts-ignore
-                "--delay": `${Math.random() * 10}s`,
-                "--duration": `${Math.random() * 10 + 5}s`,
-              }}
-            />
-          ))}
+          {Array.from({ length: 18 }).map((_, i) => {
+            const size = Math.round(Math.random() * 30 + 8);
+            return (
+              <div
+                key={`bubble-${i}`}
+                className={`absolute top-0 rounded-full ${effectColorClass} opacity-0 animate-bubble-down`}
+                style={{
+                  left: `${Math.random() * 96 + 2}%`,
+                  width: `${size}px`,
+                  height: `${size}px`,
+                  // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+                  // @ts-ignore
+                  "--delay": `${(i * 1.2) + Math.random() * 2}s`,
+                  "--duration": `${Math.random() * 8 + 12}s`,
+                  "--sway": `${Math.random() * 40 + 15}px`,
+                  "--bubble-opacity": `${Math.random() * 0.08 + 0.08}`,
+                }}
+              />
+            );
+          })}
         </div>
       )}
 
@@ -193,7 +198,7 @@ export default function DashboardPage() {
         </div>
       )}
 
-      <main className="relative z-10 mx-auto max-w-7xl space-y-6 p-4 sm:space-y-8 sm:p-8">
+      <main className="relative z-10 mx-auto max-w-7xl space-y-6 p-4 pb-6 sm:space-y-8 sm:p-8 sm:pb-8">
         <div id="dashboard-nav" className={highlightClass("dashboard-nav")}>
           <Navbar 
             onChatClick={() => setActiveTab(activeTab === "chat" ? "portfolio" : "chat")} 
@@ -210,15 +215,15 @@ export default function DashboardPage() {
           <>
             <div className={`flex flex-col gap-6 ${activeTab === "chat" ? "lg:flex-row lg:items-stretch" : "lg:flex-col"}`}>
               <div className={`space-y-6 transition-all duration-500 ease-out ${activeTab === "chat" ? "flex-1" : "w-full"}`}>
-                <section id="summary-panel" className={`rounded-[2rem] border border-slate-200 bg-white p-4 shadow-sm sm:p-6 ${highlightClass("summary-panel")}`}>
+                <section id="summary-panel" className={`rounded-[2rem] border border-slate-200 bg-white dark:bg-slate-800 dark:border-slate-700 p-4 shadow-sm sm:p-6 ${highlightClass("summary-panel")}`}>
                 <div className="mb-6">
-                  <div className="mb-3 text-lg font-bold text-emerald-500 sm:text-xl">Financial Summary</div>
+                  <div className="mb-3 text-lg font-bold text-emerald-500 dark:text-emerald-400 sm:text-xl">Financial Summary</div>
                   <div>
                     <p className="text-sm font-semibold text-slate-500 mb-1">
                       Net Worth
                       {isEducational && <LearnMore title="Net Worth" content="The total value of all your cash and stock investments combined. This is your total wealth in the simulator." />}
                     </p>
-                    <div className="text-2xl font-black text-slate-900 sm:text-3xl">{formatCurrency(portfolio.totalValue)}</div>
+                    <div className="text-2xl font-black text-slate-900 dark:text-slate-100 sm:text-3xl">{formatCurrency(portfolio.totalValue)}</div>
                   </div>
                 </div>
                 <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-4">
@@ -334,13 +339,13 @@ export default function DashboardPage() {
                 </div>
               </section>
 
-              <section className="rounded-[2rem] border border-slate-200 bg-white p-4 shadow-sm sm:p-6">
+              <section className="rounded-[2rem] border border-slate-200 bg-white dark:bg-slate-800 dark:border-slate-700 p-4 shadow-sm sm:p-6">
                 <PerformanceChart portfolio={portfolio} marketOpen={marketOpen} />
               </section>
 
-              <section id="holdings-panel" className={`rounded-[2rem] border border-slate-200 bg-white p-4 shadow-sm sm:p-6 ${highlightClass("holdings-panel")}`}>
+              <section id="holdings-panel" className={`rounded-[2rem] border border-slate-200 bg-white dark:bg-slate-800 dark:border-slate-700 p-4 shadow-sm sm:p-6 ${highlightClass("holdings-panel")}`}>
                 <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-                  <h2 className="text-xl font-bold sm:text-2xl">Holdings Breakdown</h2>
+                  <h2 className="text-xl font-bold sm:text-2xl dark:text-slate-100">Holdings Breakdown</h2>
                   <div className="flex flex-wrap items-center gap-3">
                     <div className="flex items-center gap-2 text-sm">
                       <span className={`h-2 w-2 rounded-full ${marketOpen ? "bg-green-500" : "bg-red-500"}`}></span>
@@ -359,17 +364,16 @@ export default function DashboardPage() {
             </div>
 
             <div className={`overflow-hidden transition-all duration-500 ease-out ${activeTab === "chat" ? "w-full opacity-100 lg:w-1/3 xl:w-[420px]" : "w-0 opacity-0 lg:w-0"}`}>
-              <div className={`flex h-full min-h-[60vh] flex-col rounded-[2rem] border border-slate-200 bg-white p-4 shadow-sm transition-all duration-500 ease-out sm:min-h-[640px] sm:p-6 ${activeTab === "chat" ? "opacity-100 translate-x-0" : "opacity-0 translate-x-6"}`}>
-                <div className="mb-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-end flex-shrink-0">
-                  <button
-                    type="button"
-                    onClick={() => setActiveTab("portfolio")}
-                    className="w-full rounded-full border border-slate-200 px-3 py-2 text-sm font-semibold text-slate-600 transition hover:bg-slate-100 sm:w-auto flex-shrink-0"
-                  >
-                    Close
-                  </button>
-                </div>
-                <div className="flex-1 min-h-0">
+              <div className={`relative flex h-full min-h-[60vh] flex-col rounded-[2rem] border border-slate-200 bg-white dark:bg-slate-800 dark:border-slate-700 p-4 shadow-sm transition-all duration-500 ease-out sm:min-h-[640px] sm:p-6 ${activeTab === "chat" ? "opacity-100 translate-x-0" : "opacity-0 translate-x-6"}`}>
+                <button
+                  type="button"
+                  onClick={() => setActiveTab("portfolio")}
+                  className="absolute left-3 top-3 flex h-7 w-7 items-center justify-center rounded-full text-slate-400 hover:bg-slate-100 hover:text-slate-600 dark:hover:bg-slate-700 dark:hover:text-slate-300 transition z-10 text-sm font-bold"
+                  title="Close chat"
+                >
+                  ✕
+                </button>
+                <div className="flex-1 min-h-0 mt-4">
                   <ChatAssistant />
                 </div>
               </div>
