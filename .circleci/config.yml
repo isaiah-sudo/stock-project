@@ -1,0 +1,23 @@
+version: 2.1
+
+jobs:
+  build_ios:
+    macos:
+      xcode: "16.4.0"
+    resource_class: macos.m1.medium.gen1
+    steps:
+      - checkout
+      - run:
+          name: Build and test iOS app
+          command: |
+            cd ios
+            xcodebuild \
+              -project TrilliumFinance.xcodeproj \
+              -scheme TrilliumFinance \
+              -destination 'platform=iOS Simulator,name=iPhone 16,OS=latest' \
+              test
+
+workflows:
+  ios:
+    jobs:
+      - build_ios

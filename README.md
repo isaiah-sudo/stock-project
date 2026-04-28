@@ -6,10 +6,12 @@ Production-ready starter for a beginner paper trading stock game app:
 - Local Ollama-powered AI chat assistant
 - Security-first backend patterns
 - Mobile-friendly frontend dashboard
+- Native iOS shell for the existing product experience
 
 ## Stack
 - Frontend: Next.js + TypeScript + Tailwind CSS
 - Backend: Node.js + Express + TypeScript
+- iOS: SwiftUI + WKWebView shell
 - Database: PostgreSQL via Prisma
 - Auth: JWT (access token flow)
 - AI: Local Ollama REST API
@@ -18,9 +20,10 @@ Production-ready starter for a beginner paper trading stock game app:
 
 ```txt
 .
-├─ frontend/                # Next.js app (dashboard, charts, leaderboard)
-├─ backend/                 # Express API (auth, trades, accounts, leaderboard)
-└─ shared/                  # Shared TypeScript types
+|-- frontend/                # Next.js app (dashboard, charts, leaderboard)
+|-- backend/                 # Express API (auth, trades, accounts, leaderboard)
+|-- ios/                     # Native SwiftUI app shell for iPhone/iPad
+`-- shared/                  # Shared TypeScript types
 ```
 
 ## Quick Start
@@ -40,6 +43,12 @@ Production-ready starter for a beginner paper trading stock game app:
    - `npm run start:all`
 7. Run live quote service (Python):
    - `npm run dev:quotes`
+
+## iOS App
+- Open `ios/TrilliumFinance.xcodeproj` in Xcode.
+- The native shell loads `https://trilliumfinance.net` by default.
+- Override the web host for local testing by setting `TRILLIUM_WEB_BASE_URL`.
+- The tab bar exposes the existing home, dashboard, chat, and leaderboard views.
 
 ## Live Quote Provider
 - **Primary:** Alpha Vantage (if `ALPHA_VANTAGE_API_KEY` is set in your environment)
