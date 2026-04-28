@@ -401,7 +401,7 @@ class PaperTradingService {
   private getHistoryConfig(timeframe: HistoryTimeframe) {
     switch (timeframe) {
       case "1D":
-        return { durationMs: 24 * 60 * 60 * 1000, bucketMs: 15 * 60 * 1000 };
+        return { durationMs: 72 * 60 * 60 * 1000, bucketMs: 15 * 60 * 1000 };
       case "1W":
         return { durationMs: 7 * 24 * 60 * 60 * 1000, bucketMs: 60 * 60 * 1000 };
       case "1M":

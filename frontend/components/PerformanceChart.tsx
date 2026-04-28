@@ -55,6 +55,51 @@ const TIMEFRAMES: Timeframe[] = ["1D", "1W", "1M", "ALL"];
 const BENCHMARKS: BenchmarkSymbol[] = ["SPY", "QQQ"];
 const PORTFOLIO_COLOR = "#0f766e";
 const BENCHMARK_COLOR = "#94a3b8";
+const MARKET_OPEN_ET_MINUTES = 9 * 60 + 30;
+const MARKET_STEP_MS = 30 * 60 * 1000;
+
+const ET_WEEKDAY: Record<string, number> = {
+  Sun: 0,
+  Mon: 1,
+  Tue: 2,
+  Wed: 3,
+  Thu: 4,
+  Fri: 5,
+  Sat: 6,
+};
+
+const ET_DATE_FORMATTER = new Intl.DateTimeFormat("en-US", {
+  timeZone: "America/New_York",
+  year: "numeric",
+  month: "numeric",
+  day: "numeric",
+  weekday: "short",
+  hour: "numeric",
+  minute: "2-digit",
+  hour12: false,
+  hourCycle: "h23",
+});
+
+const ET_TIME_FORMATTER = new Intl.DateTimeFormat("en-US", {
+  timeZone: "America/New_York",
+  hour: "numeric",
+  minute: "2-digit",
+  hour12: true,
+});
+
+interface RawSeriesPoint {
+  timestamp: number;
+  value: number;
+}
+
+interface EtDateParts {
+  year: number;
+  month: number;
+  day: number;
+  weekday: number;
+  hour: number;
+  minute: number;
+}
 
 function formatCurrency(value: number) {
   return `$${value.toLocaleString(undefined, {
@@ -101,11 +146,7 @@ function formatTimestampLabel(timestamp: number, timeframe: Timeframe) {
 
   switch (timeframe) {
     case "1D":
-      return date.toLocaleTimeString([], {
-        hour: "numeric",
-        minute: "2-digit",
-        hour12: true,
-      });
+      return ET_TIME_FORMATTER.format(date);
     case "1W":
       return date.toLocaleDateString([], {
         weekday: "short",
@@ -119,6 +160,186 @@ function formatTimestampLabel(timestamp: number, timeframe: Timeframe) {
         day: "numeric",
       });
   }
+}
+
+function getEtDateParts(date: Date): EtDateParts {
+  const parts = ET_DATE_FORMATTER.formatToParts(date);
+  const year = Number(parts.find((part) => part.type === "year")?.value);
+  const month = Number(parts.find((part) => part.type === "month")?.value);
+  const day = Number(parts.find((part) => part.type === "day")?.value);
+  const hour = Number(parts.find((part) => part.type === "hour")?.value);
+  const minute = Number(parts.find((part) => part.type === "minute")?.value);
+  const weekdayLabel = parts.find((part) => part.type === "weekday")?.value ?? "Mon";
+
+  return {
+    year,
+    month,
+    day,
+    weekday: ET_WEEKDAY[weekdayLabel] ?? 1,
+    hour,
+    minute,
+  };
+}
+
+function isEasternDstDate(year: number, month: number, day: number) {
+  const marchFirst = new Date(Date.UTC(year, 2, 1));
+  const marchOffset = (7 - marchFirst.getUTCDay()) % 7;
+  const secondSundayInMarch = 1 + marchOffset + 7;
+
+  const novemberFirst = new Date(Date.UTC(year, 10, 1));
+  const novemberOffset = (7 - novemberFirst.getUTCDay()) % 7;
+  const firstSundayInNovember = 1 + novemberOffset;
+
+  const afterSpringForward = month > 3 || (month === 3 && day >= secondSundayInMarch);
+  const beforeFallBack = month < 11 || (month === 11 && day < firstSundayInNovember);
+
+  return afterSpringForward && beforeFallBack;
+}
+
+function getEtOffsetHours(year: number, month: number, day: number) {
+  return isEasternDstDate(year, month, day) ? 4 : 5;
+}
+
+function isWeekend(parts: EtDateParts) {
+  return parts.weekday === 0 || parts.weekday === 6;
+}
+
+function shiftEtDate(parts: EtDateParts, dayDelta: number) {
+  const shifted = new Date(Date.UTC(parts.year, parts.month - 1, parts.day + dayDelta, 12));
+  return getEtDateParts(shifted);
+}
+
+function getCurrentTradingSessionDate(now = new Date()) {
+  let parts = getEtDateParts(now);
+  const currentMinutes = parts.hour * 60 + parts.minute;
+
+  if (isWeekend(parts) || currentMinutes < MARKET_OPEN_ET_MINUTES) {
+    do {
+      parts = shiftEtDate(parts, -1);
+    } while (isWeekend(parts));
+  }
+
+  return parts;
+}
+
+function getTradingSessionWindow(now = new Date()) {
+  const sessionDate = getCurrentTradingSessionDate(now);
+  const offsetHours = getEtOffsetHours(sessionDate.year, sessionDate.month, sessionDate.day);
+
+  return {
+    start: Date.UTC(sessionDate.year, sessionDate.month - 1, sessionDate.day, 9 + offsetHours, 30),
+    end: Date.UTC(sessionDate.year, sessionDate.month - 1, sessionDate.day, 16 + offsetHours, 0),
+    sessionDate,
+  };
+}
+
+function isSameEtDate(timestamp: number, session: EtDateParts) {
+  const parts = getEtDateParts(new Date(timestamp));
+  return parts.year === session.year && parts.month === session.month && parts.day === session.day;
+}
+
+function toSeriesPoints<T extends { timestamp: string }>(
+  points: Array<T & { value: number | null }>
+) {
+  return points
+    .map((point) => ({
+      timestamp: new Date(point.timestamp).getTime(),
+      value: point.value,
+    }))
+    .filter((point): point is RawSeriesPoint => Number.isFinite(point.timestamp) && Number.isFinite(point.value));
+}
+
+function resampleSeries(points: RawSeriesPoint[], targetTimestamps: number[]) {
+  if (points.length === 0 || targetTimestamps.length === 0) {
+    return [] as Array<{ timestamp: number; value: number }>;
+  }
+
+  const sorted = [...points].sort((a, b) => a.timestamp - b.timestamp);
+  const resampled: Array<{ timestamp: number; value: number }> = [];
+  let nextIndex = 0;
+
+  for (const targetTimestamp of targetTimestamps) {
+    while (nextIndex < sorted.length && sorted[nextIndex].timestamp < targetTimestamp) {
+      nextIndex += 1;
+    }
+
+    const exactPoint = sorted[nextIndex];
+    if (exactPoint && exactPoint.timestamp === targetTimestamp) {
+      resampled.push({ timestamp: targetTimestamp, value: exactPoint.value });
+      continue;
+    }
+
+    const previousPoint = nextIndex > 0 ? sorted[nextIndex - 1] : null;
+    const nextPoint = sorted[nextIndex] ?? null;
+
+    if (previousPoint && nextPoint) {
+      const span = nextPoint.timestamp - previousPoint.timestamp;
+      const ratio = span === 0 ? 0 : (targetTimestamp - previousPoint.timestamp) / span;
+      resampled.push({
+        timestamp: targetTimestamp,
+        value: Number((previousPoint.value + (nextPoint.value - previousPoint.value) * ratio).toFixed(2)),
+      });
+      continue;
+    }
+
+    if (previousPoint) {
+      resampled.push({ timestamp: targetTimestamp, value: previousPoint.value });
+      continue;
+    }
+
+    if (nextPoint) {
+      resampled.push({ timestamp: targetTimestamp, value: nextPoint.value });
+    }
+  }
+
+  return resampled;
+}
+
+function buildUniformTradingSessionData(history: PerformanceHistoryResponse, timeframe: Timeframe) {
+  if (timeframe !== "1D") {
+    return null;
+  }
+
+  const portfolioSeries = toSeriesPoints(
+    (history.portfolio_history ?? []).map((point) => ({
+      timestamp: point.timestamp,
+      value: point.total_market_value,
+    }))
+  );
+  const benchmarkSeries = toSeriesPoints(
+    (history.benchmark_history ?? []).map((point) => ({
+      timestamp: point.timestamp,
+      value: point.price,
+    }))
+  );
+
+  const { start, end, sessionDate } = getTradingSessionWindow();
+  const targetTimestamps: number[] = [];
+
+  for (let timestamp = start; timestamp <= end; timestamp += MARKET_STEP_MS) {
+    targetTimestamps.push(timestamp);
+  }
+
+  const sessionPortfolioPoints = portfolioSeries.filter(
+    (point) => isSameEtDate(point.timestamp, sessionDate) && point.timestamp >= start && point.timestamp <= end
+  );
+  const sessionBenchmarkPoints = benchmarkSeries.filter(
+    (point) => isSameEtDate(point.timestamp, sessionDate) && point.timestamp >= start && point.timestamp <= end
+  );
+
+  if (sessionPortfolioPoints.length === 0) {
+    return null;
+  }
+
+  const portfolioValues = resampleSeries(sessionPortfolioPoints, targetTimestamps);
+  const benchmarkValues = resampleSeries(sessionBenchmarkPoints, targetTimestamps);
+
+  return portfolioValues.map((point, index) => ({
+    label: formatTimestampLabel(point.timestamp, timeframe),
+    timestamp: point.timestamp,
+    portfolioValue: point.value,
+    benchmarkValue: benchmarkValues[index]?.value ?? null,
+  })) satisfies ChartPoint[];
 }
 
 function ChartTooltip(args: {
@@ -200,6 +421,13 @@ export function PerformanceChart({ portfolio, marketOpen }: PerformanceChartProp
       ] satisfies ChartPoint[];
     }
 
+    if (history) {
+      const uniformSessionData = buildUniformTradingSessionData(history, timeframe);
+      if (uniformSessionData) {
+        return uniformSessionData;
+      }
+    }
+
     return portfolioHistory.map((point) => {
       const timestamp = new Date(point.timestamp).getTime();
       return {
@@ -258,6 +486,11 @@ export function PerformanceChart({ portfolio, marketOpen }: PerformanceChartProp
             <p className="mt-2 hidden text-sm text-slate-500 dark:text-slate-400 sm:block">
               Historical portfolio snapshots are joined to the selected benchmark on a shared timestamp so both lines stay aligned.
             </p>
+            {timeframe === "1D" ? (
+              <p className="mt-2 text-xs font-semibold uppercase tracking-[0.22em] text-slate-400 dark:text-slate-500">
+                Regular-session view only, resampled to 30-minute intervals
+              </p>
+            ) : null}
             {error ? <p className="mt-2 text-sm font-semibold text-rose-600">{error}</p> : null}
           </div>
 
