@@ -373,6 +373,52 @@ export function PerformanceChart({ portfolio, marketOpen }: PerformanceChartProp
   const [hoveredIndex, setHoveredIndex] = useState<number | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [countdown, setCountdown] = useState("");
+
+  // Market countdown timer
+  useEffect(() => {
+    function computeCountdown() {
+      const now = new Date();
+      const etStr = now.toLocaleString("en-US", { timeZone: "America/New_York" });
+      const et = new Date(etStr);
+      const day = et.getDay(); // 0=Sun, 6=Sat
+      const hours = et.getHours();
+      const minutes = et.getMinutes();
+      const currentMinutes = hours * 60 + minutes;
+      const openMinutes = 9 * 60 + 30;  // 9:30 AM ET
+      const closeMinutes = 16 * 60;      // 4:00 PM ET
+
+      let diffMs = 0;
+
+      if (day >= 1 && day <= 5 && currentMinutes >= openMinutes && currentMinutes < closeMinutes) {
+        // Market is open — countdown to close
+        diffMs = (closeMinutes - currentMinutes) * 60 * 1000 - (et.getSeconds() * 1000);
+      } else {
+        // Market is closed — countdown to next open
+        let daysUntilOpen = 0;
+        if (day === 6) daysUntilOpen = 2; // Sat -> Mon
+        else if (day === 0) daysUntilOpen = 1; // Sun -> Mon
+        else if (currentMinutes >= closeMinutes) daysUntilOpen = day === 5 ? 3 : 1; // After close: Fri->Mon, else next day
+        else daysUntilOpen = 0; // Before open, same day
+
+        const nextOpen = new Date(et);
+        nextOpen.setDate(nextOpen.getDate() + daysUntilOpen);
+        nextOpen.setHours(9, 30, 0, 0);
+        diffMs = nextOpen.getTime() - et.getTime();
+      }
+
+      if (diffMs <= 0) return "";
+      const totalSec = Math.floor(diffMs / 1000);
+      const h = Math.floor(totalSec / 3600);
+      const m = Math.floor((totalSec % 3600) / 60);
+      const s = totalSec % 60;
+      return `${h}h ${String(m).padStart(2, "0")}m ${String(s).padStart(2, "0")}s`;
+    }
+
+    setCountdown(computeCountdown());
+    const timer = setInterval(() => setCountdown(computeCountdown()), 1000);
+    return () => clearInterval(timer);
+  }, []);
 
   useEffect(() => {
     let cancelled = false;
@@ -470,6 +516,11 @@ export function PerformanceChart({ portfolio, marketOpen }: PerformanceChartProp
               >
                 {marketOpen ? "Regular Session" : "Markets Closed"}
               </span>
+              {countdown && (
+                <span className={`text-[11px] font-bold font-num ${marketOpen ? "text-rose-500" : "text-emerald-500"}`}>
+                  {marketOpen ? `Closes in ${countdown}` : `Opens in ${countdown}`}
+                </span>
+              )}
               <span className="rounded-full bg-slate-100 dark:bg-slate-700 px-2.5 py-1 text-[11px] font-bold text-slate-500 dark:text-slate-400">
                 vs {benchmarkLabel}
               </span>
@@ -483,14 +534,6 @@ export function PerformanceChart({ portfolio, marketOpen }: PerformanceChartProp
                 </span>
               </div>
             </div>
-            <p className="mt-2 hidden text-sm text-slate-500 dark:text-slate-400 sm:block">
-              Historical portfolio snapshots are joined to the selected benchmark on a shared timestamp so both lines stay aligned.
-            </p>
-            {timeframe === "1D" ? (
-              <p className="mt-2 text-xs font-semibold uppercase tracking-[0.22em] text-slate-400 dark:text-slate-500">
-                Regular-session view only, resampled to 30-minute intervals
-              </p>
-            ) : null}
             {error ? <p className="mt-2 text-sm font-semibold text-rose-600">{error}</p> : null}
           </div>
 
@@ -544,7 +587,7 @@ export function PerformanceChart({ portfolio, marketOpen }: PerformanceChartProp
         </div>
       </div>
 
-      <div className="mt-4 h-[260px] w-full sm:mt-6 sm:h-[390px]">
+      <div className="mt-4 h-[300px] w-full sm:mt-6 sm:h-[440px]">
         <ResponsiveContainer width="100%" height="100%">
           <ComposedChart
             data={chartData}

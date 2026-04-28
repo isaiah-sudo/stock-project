@@ -39,7 +39,7 @@ export function TrophyCard({ rank, icon, label, desc }: { rank: 1 | 2 | 3; icon:
       onMouseMove={handleMouseMove}
       onMouseEnter={handleMouseEnter}
       onMouseLeave={handleMouseLeave}
-      className={`relative flex flex-1 h-32 min-w-[100px] max-w-[180px] shrink-0 flex-col items-center justify-center rounded-2xl border-2 bg-gradient-to-br from-white to-slate-50 dark:from-slate-700 dark:to-slate-800 p-2 text-center transition-all ${borderGlow}`}
+      className={`relative flex flex-1 h-32 min-w-[100px] max-w-[180px] shrink-0 flex-col items-center justify-center rounded-2xl border-2 bg-gradient-to-br from-white to-slate-50 dark:from-slate-700 dark:to-slate-800 p-2 text-center transition-all overflow-hidden ${borderGlow}`}
       style={{
         transformStyle: "preserve-3d",
         transform: `perspective(800px) rotateX(${rotation.x}deg) rotateY(${rotation.y}deg) scale(${isHovering ? 1.05 : 1})`,
@@ -47,7 +47,7 @@ export function TrophyCard({ rank, icon, label, desc }: { rank: 1 | 2 | 3; icon:
       }}
     >
       <div 
-        className="mb-2 text-4xl drop-shadow-md"
+        className="mb-1 text-4xl drop-shadow-md"
         style={{ transform: "translateZ(30px)" }}
       >
         {icon}
@@ -58,15 +58,14 @@ export function TrophyCard({ rank, icon, label, desc }: { rank: 1 | 2 | 3; icon:
       >
         {label}
       </div>
-      {/* Description tooltip on hover */}
+      {/* Description inside card on hover */}
       {desc && (
         <div
-          className={`absolute -bottom-1 left-1/2 -translate-x-1/2 translate-y-full z-20 w-40 rounded-xl bg-slate-900 dark:bg-slate-700 px-3 py-2 text-[11px] font-medium text-white text-center shadow-lg transition-all duration-200 pointer-events-none ${
-            isHovering ? "opacity-100 scale-100" : "opacity-0 scale-95"
+          className={`absolute inset-0 flex items-center justify-center rounded-2xl bg-slate-900/90 dark:bg-slate-700/95 px-2 py-1 text-[10px] font-medium text-white text-center leading-tight transition-all duration-200 ${
+            isHovering ? "opacity-100" : "opacity-0 pointer-events-none"
           }`}
         >
           {desc}
-          <div className="absolute -top-1 left-1/2 -translate-x-1/2 w-2 h-2 bg-slate-900 dark:bg-slate-700 rotate-45" />
         </div>
       )}
     </div>

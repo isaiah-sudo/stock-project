@@ -9,23 +9,16 @@ export function computePortfolioDayMetrics(args: {
   const holdingsValue = args.holdings.reduce((sum, h) => sum + h.quantity * h.currentPrice, 0);
   const totalValue = Number((args.cashBalance + holdingsValue).toFixed(2));
 
-  // Dollar change based on daily changePct, but adjusted for the user's actual holding period today.
+  // Dollar change today: sum of (currentPrice - previousClose) * quantity for each holding.
+  // previousClose is derived from the stock's daily changePct.
   const dayChangeDollar = Number(
     args.holdings
       .reduce((sum, h) => {
-        const currentMv = h.quantity * h.currentPrice;
-        // previousQuotePrice = currentPrice / (1 + changePct/100)
-        const previousQuotePrice = h.currentPrice / (1 + h.changePct / 100);
-        
-        // If the stock is up today, we only count gains above our average cost.
-        // If the stock is down today, we only count losses below our average cost.
-        // This makes "Day Change" consistent with "Total Value" for new positions.
-        const dayStartPrice = h.changePct >= 0 
-          ? Math.max(previousQuotePrice, h.averageCost)
-          : Math.min(previousQuotePrice, h.averageCost);
-          
-        const previousMv = h.quantity * dayStartPrice;
-        return sum + (currentMv - previousMv);
+        // previousClose = currentPrice / (1 + changePct/100)
+        const previousClose = h.changePct !== -100
+          ? h.currentPrice / (1 + h.changePct / 100)
+          : h.currentPrice;
+        return sum + (h.currentPrice - previousClose) * h.quantity;
       }, 0)
       .toFixed(2)
   );

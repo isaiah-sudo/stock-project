@@ -385,10 +385,6 @@ export default function DashboardPage() {
                 <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
                   <h2 className="text-xl font-bold sm:text-2xl dark:text-slate-100">Holdings Breakdown</h2>
                   <div className="flex flex-wrap items-center gap-3">
-                    <div className="flex items-center gap-2 text-sm dark:text-slate-300">
-                      <span className={`h-2 w-2 rounded-full ${marketOpen ? "bg-green-500" : "bg-red-500"}`}></span>
-                      {marketOpen ? "Markets Open" : "Markets Closed"}
-                    </div>
                     <button
                       onClick={() => setIsTradeModalOpen(true)}
                       className="w-full rounded-3xl bg-blue-600 px-4 py-2 text-sm font-semibold text-white shadow-lg shadow-blue-200/60 transition hover:bg-blue-700 sm:w-auto"
