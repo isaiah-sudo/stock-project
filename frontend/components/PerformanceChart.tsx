@@ -229,9 +229,9 @@ export function PerformanceChart({ portfolio, marketOpen }: PerformanceChartProp
   const benchmarkLabel = history?.benchmark?.symbol ?? benchmarkSymbol;
 
   return (
-    <div className="h-[560px] w-full rounded-[2rem] border border-slate-100 dark:border-slate-700 bg-white dark:bg-slate-800 p-6 shadow-sm">
-      <div className="flex flex-col gap-5">
-        <div className="flex flex-col gap-4 xl:flex-row xl:items-start xl:justify-between">
+    <div className="w-full rounded-[2rem] border border-slate-100 dark:border-slate-700 bg-white dark:bg-slate-800 p-3 shadow-sm sm:p-6">
+      <div className="flex flex-col gap-3 sm:gap-5">
+        <div className="flex flex-col gap-3 sm:gap-4 xl:flex-row xl:items-start xl:justify-between">
           <div>
             <div className="flex flex-wrap items-center gap-2">
               <p className="text-xs font-bold uppercase tracking-[0.28em] text-slate-400 dark:text-slate-500">Market Value</p>
@@ -247,15 +247,15 @@ export function PerformanceChart({ portfolio, marketOpen }: PerformanceChartProp
               </span>
             </div>
             <div className="mt-3 flex flex-wrap items-baseline gap-3">
-              <h2 className="text-3xl font-black tracking-tight text-slate-900 dark:text-slate-100 font-num">{formatCurrency(currentValue)}</h2>
-              <div className={`flex items-center gap-2 text-sm font-bold font-num ${deltaValue >= 0 ? "text-emerald-500" : "text-rose-500"}`}>
+              <h2 className="text-xl font-black tracking-tight text-slate-900 dark:text-slate-100 font-num sm:text-3xl">{formatCurrency(currentValue)}</h2>
+              <div className={`flex items-center gap-1 text-xs font-bold font-num sm:gap-2 sm:text-sm ${deltaValue >= 0 ? "text-emerald-500" : "text-rose-500"}`}>
                 <span>{deltaValue >= 0 ? "+" : ""}{formatCurrency(deltaValue)}</span>
                 <span className="text-slate-400">
                   ({deltaPct >= 0 ? "+" : ""}{deltaPct.toFixed(2)}%)
                 </span>
               </div>
             </div>
-            <p className="mt-2 text-sm text-slate-500 dark:text-slate-400">
+            <p className="mt-2 hidden text-sm text-slate-500 dark:text-slate-400 sm:block">
               Historical portfolio snapshots are joined to the selected benchmark on a shared timestamp so both lines stay aligned.
             </p>
             {error ? <p className="mt-2 text-sm font-semibold text-rose-600">{error}</p> : null}
@@ -311,11 +311,11 @@ export function PerformanceChart({ portfolio, marketOpen }: PerformanceChartProp
         </div>
       </div>
 
-      <div className="mt-6 h-[390px] w-full">
+      <div className="mt-4 h-[260px] w-full sm:mt-6 sm:h-[390px]">
         <ResponsiveContainer width="100%" height="100%">
           <ComposedChart
             data={chartData}
-            margin={{ top: 18, right: 18, left: 4, bottom: 8 }}
+            margin={{ top: 10, right: 4, left: 0, bottom: 4 }}
             onMouseMove={(state) => {
               if (typeof state.activeTooltipIndex === "number") {
                 setHoveredIndex(state.activeTooltipIndex);
@@ -348,7 +348,7 @@ export function PerformanceChart({ portfolio, marketOpen }: PerformanceChartProp
               ticks={yTicks}
               tickLine={false}
               axisLine={false}
-              width={68}
+              width={56}
               tick={{ fontSize: 11, fill: "#94a3b8", fontWeight: 600 }}
               tickFormatter={(value: number) => `$${value.toLocaleString(undefined, { maximumFractionDigits: 0 })}`}
             />
@@ -359,7 +359,7 @@ export function PerformanceChart({ portfolio, marketOpen }: PerformanceChartProp
                 domain={["auto", "auto"]}
                 tickLine={false}
                 axisLine={false}
-                width={68}
+                width={56}
                 tick={{ fontSize: 11, fill: "#94a3b8", fontWeight: 600 }}
                 tickFormatter={(value: number) => `$${value.toLocaleString(undefined, { maximumFractionDigits: 0 })}`}
               />

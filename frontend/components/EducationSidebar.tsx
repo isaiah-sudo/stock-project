@@ -48,7 +48,7 @@ export function EducationSidebar() {
   const concept = CONCEPTS[conceptIndex];
 
   return (
-    <aside className="fixed right-6 bottom-6 z-40">
+    <aside className="fixed right-3 bottom-3 z-40 sm:right-6 sm:bottom-6">
       {/* Question Mark Launcher Button */}
       <button
         onClick={() => setIsVisible(true)}
@@ -64,7 +64,7 @@ export function EducationSidebar() {
 
       {/* Main Sidebar */}
       <div 
-        className={`w-80 transform transition-all duration-700 ease-[cubic-bezier(0.23,1,0.32,1)] ${
+        className={`w-[calc(100vw-1.5rem)] max-w-80 transform transition-all duration-700 ease-[cubic-bezier(0.23,1,0.32,1)] ${
           isVisible ? 'translate-y-0 scale-100 opacity-100' : 'translate-y-12 scale-95 opacity-0 pointer-events-none'
         }`}
       >

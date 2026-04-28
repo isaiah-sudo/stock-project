@@ -236,7 +236,7 @@ export default function DashboardPage() {
         </div>
       )}
 
-      <main className="relative z-10 mx-auto max-w-7xl space-y-6 p-4 pb-6 sm:space-y-8 sm:p-8 sm:pb-8">
+      <main className="relative z-10 mx-auto max-w-7xl space-y-4 p-3 pb-6 sm:space-y-8 sm:p-8 sm:pb-8">
         <div id="dashboard-nav" className={highlightClass("dashboard-nav")}>
           <Navbar 
             onChatClick={() => setActiveTab(activeTab === "chat" ? "portfolio" : "chat")} 
@@ -253,31 +253,31 @@ export default function DashboardPage() {
           <>
             <div className={`flex flex-col gap-6 ${activeTab === "chat" ? "lg:flex-row lg:items-stretch" : "lg:flex-col"}`}>
               <div className={`space-y-6 transition-all duration-500 ease-out ${activeTab === "chat" ? "flex-1" : "w-full"}`}>
-                <section id="summary-panel" className={`rounded-[2rem] border border-slate-200 bg-white dark:bg-slate-800 dark:border-slate-700 p-4 shadow-sm sm:p-6 ${highlightClass("summary-panel")}`}>
-                <div className="mb-6">
-                  <div className="mb-3 text-lg font-bold text-emerald-500 dark:text-emerald-400 sm:text-xl">Financial Summary</div>
+                <section id="summary-panel" className={`rounded-[2rem] border border-slate-200 bg-white dark:bg-slate-800 dark:border-slate-700 p-3 shadow-sm sm:p-6 ${highlightClass("summary-panel")}`}>
+                <div className="mb-3 sm:mb-6">
+                  <div className="mb-2 text-base font-bold text-emerald-500 dark:text-emerald-400 sm:mb-3 sm:text-xl">Financial Summary</div>
                   <div>
                     <p className="text-sm font-semibold text-slate-500 dark:text-slate-400 mb-1">
                       Net Worth
                       {isEducational && <LearnMore title="Net Worth" content="The total value of all your cash and stock investments combined. This is your total wealth in the simulator." />}
                     </p>
-                    <div className="text-2xl font-black text-slate-900 dark:text-slate-100 sm:text-3xl font-num">{formatCurrency(displayNetWorth)}</div>
+                    <div className="text-xl font-black text-slate-900 dark:text-slate-100 sm:text-3xl font-num">{formatCurrency(displayNetWorth)}</div>
                   </div>
                 </div>
-                <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-4">
+                <div className="grid grid-cols-2 gap-3 sm:gap-4 md:grid-cols-2 xl:grid-cols-4">
                   <div>
                     <p className="text-sm font-semibold text-slate-500 dark:text-slate-400">
                       Market Value
                       {isEducational && <LearnMore title="Market Value" content="The current total worth of all the stocks you own if you were to sell them right now." />}
                     </p>
-                    <p className="text-xl font-bold text-slate-900 dark:text-slate-100 sm:text-2xl font-num">{formatCurrency(marketValue)}</p>
+                    <p className="text-lg font-bold text-slate-900 dark:text-slate-100 sm:text-2xl font-num">{formatCurrency(marketValue)}</p>
                   </div>
                   <div>
                     <p className="text-sm font-semibold text-slate-500 dark:text-slate-400">
                       Total Performance
                       {isEducational && <LearnMore title="Total Performance" content="How much your account has grown (or shrunk) since you started with your initial $10,000 balance." />}
                     </p>
-                    <p className={`text-xl font-bold sm:text-2xl font-num ${totalPerformanceDollar >= 0 ? "text-emerald-600" : "text-rose-600"}`}>
+                    <p className={`text-lg font-bold sm:text-2xl font-num ${totalPerformanceDollar >= 0 ? "text-emerald-600" : "text-rose-600"}`}>
                       {totalPerformanceDollar >= 0 ? "+" : ""}{formatCurrency(totalPerformanceDollar)}
                     </p>
                     <p className="text-sm text-slate-500 dark:text-slate-400 font-num">
@@ -289,7 +289,7 @@ export default function DashboardPage() {
                       Day Performance
                       {isEducational && <LearnMore title="Day Performance" content="How much your portfolio value changed specifically since the market opened today." />}
                     </p>
-                    <p className={`text-xl font-bold sm:text-2xl font-num ${dayPerformanceDollar >= 0 ? "text-emerald-600" : "text-rose-600"}`}>
+                    <p className={`text-lg font-bold sm:text-2xl font-num ${dayPerformanceDollar >= 0 ? "text-emerald-600" : "text-rose-600"}`}>
                       {dayPerformanceDollar >= 0 ? "+" : ""}{formatCurrency(displayDayPerf)}
                     </p>
                     <p className="text-sm text-slate-500 dark:text-slate-400 font-num">
@@ -301,7 +301,7 @@ export default function DashboardPage() {
                       Available Cash
                       {isEducational && <LearnMore title="Available Cash" content="The money you have 'on hand' to buy new stocks. It doesn't include the value of stocks you already own." />}
                     </p>
-                    <p className="text-xl font-bold text-slate-900 dark:text-slate-100 sm:text-2xl font-num">{formatCurrency(portfolio.cashBalance)}</p>
+                    <p className="text-lg font-bold text-slate-900 dark:text-slate-100 sm:text-2xl font-num">{formatCurrency(portfolio.cashBalance)}</p>
                   </div>
                 </div>
 
@@ -377,11 +377,11 @@ export default function DashboardPage() {
                 </div>
               </section>
 
-              <section className="rounded-[2rem] border border-slate-200 bg-white dark:bg-slate-800 dark:border-slate-700 p-4 shadow-sm sm:p-6">
+              <section className="rounded-[2rem] border border-slate-200 bg-white dark:bg-slate-800 dark:border-slate-700 p-2 shadow-sm sm:p-6">
                 <PerformanceChart portfolio={portfolio} marketOpen={marketOpen} />
               </section>
 
-              <section id="holdings-panel" className={`rounded-[2rem] border border-slate-200 bg-white dark:bg-slate-800 dark:border-slate-700 p-4 shadow-sm sm:p-6 ${highlightClass("holdings-panel")}`}>
+              <section id="holdings-panel" className={`rounded-[2rem] border border-slate-200 bg-white dark:bg-slate-800 dark:border-slate-700 p-3 shadow-sm sm:p-6 ${highlightClass("holdings-panel")}`}>
                 <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
                   <h2 className="text-xl font-bold sm:text-2xl dark:text-slate-100">Holdings Breakdown</h2>
                   <div className="flex flex-wrap items-center gap-3">
@@ -425,8 +425,8 @@ export default function DashboardPage() {
         )}
 
         {isTradeModalOpen && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-sm">
-            <div className="w-full max-w-xl relative rounded-[2rem] bg-white dark:bg-slate-800 shadow-2xl border border-slate-100 dark:border-slate-700 overflow-hidden">
+          <div className="fixed inset-0 z-50 flex items-end justify-center bg-slate-900/40 backdrop-blur-sm sm:items-center sm:p-4">
+            <div className="w-full max-h-[90vh] overflow-y-auto relative rounded-t-[2rem] bg-white dark:bg-slate-800 shadow-2xl border border-slate-100 dark:border-slate-700 sm:max-w-xl sm:rounded-[2rem]">
               <button
                 onClick={() => setIsTradeModalOpen(false)}
                 className="absolute right-4 top-4 h-10 w-10 rounded-full bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 transition hover:bg-slate-200 dark:hover:bg-slate-600"

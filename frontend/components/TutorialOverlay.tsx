@@ -215,16 +215,16 @@ export function TutorialOverlay({
           ) : null}
         </div>
 
-        <div className="mt-5 flex items-center justify-between">
+        <div className="mt-5 flex flex-wrap items-center justify-between gap-2">
           <button
             onClick={() => setIndex((current) => Math.max(0, current - 1))}
             disabled={isFirst}
-            className="rounded-xl border border-slate-300 px-4 py-2 text-sm font-semibold text-slate-700 disabled:opacity-40"
+            className="rounded-xl border border-slate-300 px-3 py-2 text-sm font-semibold text-slate-700 disabled:opacity-40 sm:px-4"
           >
             Back
           </button>
 
-          <div className="flex items-center gap-2">
+          <div className="flex flex-wrap items-center gap-2">
             {step.actionLabel ? (
               <button
                 onClick={() => onStepAction?.(step, index)}
@@ -236,7 +236,7 @@ export function TutorialOverlay({
             {onDismissForever ? (
               <button
                 onClick={onDismissForever}
-                className="rounded-xl border border-slate-300 px-4 py-2 text-sm font-semibold text-slate-700"
+                className="hidden rounded-xl border border-slate-300 px-3 py-2 text-sm font-semibold text-slate-700 sm:block sm:px-4"
               >
                 Don't show again
               </button>

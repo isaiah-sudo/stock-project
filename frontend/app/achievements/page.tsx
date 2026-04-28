@@ -6,7 +6,7 @@ import { PageHeader } from "../../components/PageHeader";
 
 export default function AchievementsPage() {
   return (
-    <main className="mx-auto max-w-7xl space-y-10 p-6 sm:p-12">
+    <main className="mx-auto max-w-7xl space-y-6 p-3 sm:space-y-10 sm:p-12">
       <Navbar />
       <PageHeader
         icon="🏆"

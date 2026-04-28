@@ -13,7 +13,7 @@ export default function HomePage() {
 
   return (
     <main className="min-h-screen bg-gradient-to-b from-slate-50 to-blue-50">
-      <header className="mx-auto flex w-full max-w-6xl items-center justify-between px-6 py-6 sm:px-8">
+      <header className="mx-auto flex w-full max-w-6xl items-center justify-between px-4 py-4 sm:px-8 sm:py-6">
         <div className="flex items-center gap-3">
           <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-blue-600 font-black text-white">
             T
@@ -33,14 +33,14 @@ export default function HomePage() {
         </button>
       </header>
 
-      <section className="mx-auto flex w-full max-w-6xl flex-col items-center px-6 pb-16 pt-8 text-center sm:px-8">
+      <section className="mx-auto flex w-full max-w-6xl flex-col items-center px-4 pb-12 pt-6 text-center sm:px-8 sm:pb-16 sm:pt-8">
         <p className="rounded-full border border-blue-100 bg-blue-50 px-4 py-2 text-xs font-bold uppercase tracking-wide text-blue-700">
           Trillium Finance Simulator
         </p>
-        <h1 className="mt-8 max-w-4xl text-5xl font-black tracking-tight text-slate-900 sm:text-6xl">
+        <h1 className="mt-6 max-w-4xl text-3xl font-black tracking-tight text-slate-900 sm:mt-8 sm:text-5xl lg:text-6xl">
           Where learning and investing come together
         </h1>
-        <p className="mt-6 max-w-3xl text-lg font-medium leading-8 text-slate-600">
+        <p className="mt-4 max-w-3xl text-base font-medium leading-7 text-slate-600 sm:mt-6 sm:text-lg sm:leading-8">
           Build confidence with real market-style practice. Choose Educational mode for guided,
           interactive walkthroughs, or Personal mode for the full simulator experience.
         </p>

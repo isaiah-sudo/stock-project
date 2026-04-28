@@ -79,7 +79,8 @@ export function HoldingsTable({ holdings }: { holdings: Holding[] }) {
           </select>
         </div>
       </div>
-      <div className="overflow-x-auto">
+      <div className="overflow-x-auto mobile-scroll-x">
+        <div className="min-w-[700px]">
         <table className="w-full text-sm">
           <thead>
             <tr className="text-left text-slate-500 dark:text-slate-400">
@@ -130,6 +131,7 @@ export function HoldingsTable({ holdings }: { holdings: Holding[] }) {
             })}
           </tbody>
         </table>
+        </div>
       </div>
     </div>
   );
