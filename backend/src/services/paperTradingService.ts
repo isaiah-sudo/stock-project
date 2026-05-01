@@ -481,10 +481,17 @@ class PaperTradingService {
     });
 
     const now = new Date();
+    const marketOpen = this.isMarketOpen();
+    const snapshotAgeMs = latestSnapshot ? now.getTime() - latestSnapshot.timestamp.getTime() : Number.POSITIVE_INFINITY;
+    const latestValue = latestSnapshot?.totalMarketValue;
+    const hasMeaningfulMove =
+      latestValue === undefined ||
+      Math.abs((options?.totalMarketValue ?? latestValue) - latestValue) >= Math.max(5, latestValue * 0.001);
+
     const shouldCreate =
       options?.force === true ||
       !latestSnapshot ||
-      (this.isMarketOpen() && now.getTime() - latestSnapshot.timestamp.getTime() >= 60 * 60 * 1000) ||
+      (marketOpen && (snapshotAgeMs >= 15 * 60 * 1000 || hasMeaningfulMove)) ||
       this.getEtDayKey(latestSnapshot.timestamp) !== this.getEtDayKey(now) ||
       (this.isAfterMarketClose(now) && !this.isAfterMarketClose(latestSnapshot.timestamp));
 
@@ -626,8 +633,6 @@ class PaperTradingService {
       return null;
     }
 
-    await this.recordPortfolioSnapshot(userId, { totalMarketValue: portfolioState.holdingsValue });
-
     const { durationMs, bucketMs } = this.getHistoryConfig(timeframe);
     const snapshots = await prisma.portfolioSnapshot.findMany({
       where: {
@@ -657,6 +662,18 @@ class PaperTradingService {
     const portfolioHistory = Array.from(snapshotByBucket.values()).sort(
       (a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime()
     );
+    const nowBucket = this.bucketTimestamp(Date.now(), bucketMs);
+    const livePoint = {
+      timestamp: new Date(nowBucket).toISOString(),
+      total_market_value: Number(portfolioState.holdingsValue.toFixed(2))
+    };
+
+    if (portfolioHistory.length === 0 || portfolioHistory[portfolioHistory.length - 1].timestamp !== livePoint.timestamp) {
+      portfolioHistory.push(livePoint);
+    } else {
+      portfolioHistory[portfolioHistory.length - 1] = livePoint;
+    }
+
     const benchmarkHistory = await this.getBenchmarkHistory(benchmark, timeframe);
     const aligned = this.alignHistorySeries({ portfolioHistory, benchmarkHistory, bucketMs });
 

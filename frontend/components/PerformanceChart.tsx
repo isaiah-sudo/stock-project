@@ -56,7 +56,7 @@ const BENCHMARKS: BenchmarkSymbol[] = ["SPY", "QQQ"];
 const PORTFOLIO_COLOR = "#0f766e";
 const BENCHMARK_COLOR = "#94a3b8";
 const MARKET_OPEN_ET_MINUTES = 9 * 60 + 30;
-const MARKET_STEP_MS = 30 * 60 * 1000;
+const MARKET_STEP_MS = 15 * 60 * 1000;
 
 const ET_WEEKDAY: Record<string, number> = {
   Sun: 0,
@@ -449,6 +449,10 @@ export function PerformanceChart({ portfolio, marketOpen }: PerformanceChartProp
     };
   }, [benchmarkSymbol, timeframe, portfolio.totalValue, portfolio.cashBalance, portfolio.holdings.length]);
 
+  const liveMarketValue = Number((portfolio.totalValue - portfolio.cashBalance).toFixed(2));
+  const liveDayChangeDollar = Number((portfolio.dayChangeDollar ?? 0).toFixed(2));
+  const liveDayChangePct = Number((portfolio.dayChangePct ?? 0).toFixed(2));
+
   const chartData = useMemo(() => {
     const portfolioHistory = history?.portfolio_history ?? [];
     const benchmarkByTimestamp = new Map(
@@ -485,12 +489,12 @@ export function PerformanceChart({ portfolio, marketOpen }: PerformanceChartProp
     });
   }, [history, portfolio.cashBalance, portfolio.totalValue, timeframe]);
 
-  const activePoint = hoveredIndex !== null ? chartData[hoveredIndex] : chartData[chartData.length - 1];
   const startPoint = chartData[0];
-  const currentValue = activePoint?.portfolioValue ?? 0;
-  const deltaValue = currentValue - (startPoint?.portfolioValue ?? currentValue);
-  const deltaPct =
-    startPoint?.portfolioValue && startPoint.portfolioValue !== 0
+  const currentValue = liveMarketValue;
+  const deltaValue = timeframe === "1D" ? liveDayChangeDollar : currentValue - (startPoint?.portfolioValue ?? currentValue);
+  const deltaPct = timeframe === "1D"
+    ? liveDayChangePct
+    : startPoint?.portfolioValue && startPoint.portfolioValue !== 0
       ? (deltaValue / startPoint.portfolioValue) * 100
       : 0;
   const values = chartData.map((point) => point.portfolioValue);
