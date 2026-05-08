@@ -98,7 +98,7 @@ export async function sendPortfolioDigestEmail(args: {
   const text = [
     `Yo ${args.name}, here's your Trillium check-in.`,
     `Net worth: ${formatMoney(args.portfolio.totalValue)} (${netChange >= 0 ? "+" : ""}${formatMoney(netChange)})`,
-    `Day move: ${args.portfolio.dayChangeDollar >= 0 ? "+" : ""}${formatMoney(args.portfolio.dayChangeDollar ?? 0)}`,
+    `Day move: ${(args.portfolio.dayChangeDollar ?? 0) >= 0 ? "+" : ""}${formatMoney(args.portfolio.dayChangeDollar ?? 0)}`,
     `Holdings: ${holdingsCount}`,
     topHolding ? `Biggest line item: ${topHolding.symbol}` : "No holdings yet.",
   ].join("\n");
@@ -106,7 +106,7 @@ export async function sendPortfolioDigestEmail(args: {
     <div style="font-family:Arial,sans-serif;line-height:1.5;color:#0f172a">
       <h2 style="margin:0 0 12px">Yo ${args.name}, your Trillium check-in</h2>
       <p style="margin:0 0 10px">Net worth: <strong>${formatMoney(args.portfolio.totalValue)}</strong></p>
-      <p style="margin:0 0 10px">Day move: <strong>${args.portfolio.dayChangeDollar >= 0 ? "+" : ""}${formatMoney(args.portfolio.dayChangeDollar ?? 0)}</strong></p>
+      <p style="margin:0 0 10px">Day move: <strong>${(args.portfolio.dayChangeDollar ?? 0) >= 0 ? "+" : ""}${formatMoney(args.portfolio.dayChangeDollar ?? 0)}</strong></p>
       <p style="margin:0 0 10px">Holdings: <strong>${holdingsCount}</strong></p>
       <p style="margin:0 0 10px">Cash: <strong>${formatMoney(args.portfolio.cashBalance)}</strong></p>
       <p style="margin:0 0 10px">Top holding: <strong>${topHolding?.symbol ?? "none yet"}</strong></p>

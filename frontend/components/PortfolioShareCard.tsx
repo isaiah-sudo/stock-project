@@ -67,7 +67,7 @@ export function PortfolioShareCard({ portfolio }: { portfolio: Portfolio }) {
     ctx.strokeRect(80, 400, 1040, 300);
 
     const stats = [
-      ["Day move", `${portfolio.dayChangeDollar >= 0 ? "+" : ""}${formatMoney(portfolio.dayChangeDollar ?? 0)}`],
+      ["Day move", `${(portfolio.dayChangeDollar ?? 0) >= 0 ? "+" : ""}${formatMoney(portfolio.dayChangeDollar ?? 0)}`],
       ["Cash", formatMoney(portfolio.cashBalance)],
       ["Holdings", String(portfolio.holdings.length)]
     ];
