@@ -11,6 +11,7 @@ import portfolioRoutes from "./routes/portfolio.js";
 import chatRoutes from "./routes/chat.js";
 import paperRoutes from "./routes/paper.js";
 import leaderboardRoutes from "./routes/leaderboard.js";
+import cronRoutes from "./routes/cron.js";
 
 function getLanIp(): string | null {
   const interfaces = os.networkInterfaces();
@@ -28,6 +29,18 @@ function getLanIp(): string | null {
 
 const app = express();
 const port = Number(process.env.PORT ?? 4000);
+const allowedOrigins = new Set(
+  [
+    process.env.FRONTEND_URL,
+    process.env.PUBLIC_APP_URL,
+    ...(process.env.CORS_ORIGINS?.split(",") ?? []),
+    "http://localhost:3000",
+    "http://127.0.0.1:3000"
+  ]
+    .filter((value): value is string => Boolean(value))
+    .map((value) => value.trim())
+    .filter(Boolean)
+);
 
 // Required for express-rate-limit to work behind Cloudflare or Firebase
 app.set("trust proxy", 1);
@@ -39,32 +52,21 @@ app.use(
       // Allow requests with no origin (like mobile apps or curl requests)
       if (!origin) return callback(null, true);
 
-      // Allow localhost and 127.0.0.1
-      if (origin === "http://localhost:3000" || origin === "http://127.0.0.1:3000") {
+      if (allowedOrigins.has(origin)) {
         return callback(null, true);
       }
 
-      // Allow Firebase Hosting domains
-      if (origin.endsWith(".web.app") || origin.endsWith(".firebaseapp.com")) {
-        return callback(null, true);
-      }
-
-      // Allow custom domain and tunnel
-      const allowedOrigins = [
-        "https://trilliumfinance.net",
-        "http://trilliumfinance.net",
-        "https://www.trilliumfinance.net",
-        "http://www.trilliumfinance.net",
-        "https://trillium-finance.nport.link"
-      ];
-
-      if (allowedOrigins.includes(origin)) {
-        return callback(null, true);
+      try {
+        const parsed = new URL(origin);
+        if (allowedOrigins.has(`${parsed.protocol}//${parsed.host}`)) {
+          return callback(null, true);
+        }
+      } catch {
+        // ignore malformed origins
       }
 
       // Allow any IP on port 3000 (for LAN access)
-      const url = new URL(origin);
-      if (url.port === "3000" && /^https?:\/\/\d+\.\d+\.\d+\.\d+:3000$/.test(origin)) {
+      if (/^https?:\/\/\d+\.\d+\.\d+\.\d+:3000$/.test(origin)) {
         return callback(null, true);
       }
 
@@ -91,6 +93,7 @@ app.use("/api/portfolio", portfolioRoutes);
 app.use("/api/chat", chatRoutes);
 app.use("/api/paper", paperRoutes);
 app.use("/api/leaderboard", leaderboardRoutes);
+app.use("/api/cron", cronRoutes);
 
 // Only start the server locally if not running as a Cloud Function
 if (process.env.NODE_ENV !== "production" && !process.env.FUNCTIONS_EMULATOR) {
@@ -108,6 +111,8 @@ if (process.env.NODE_ENV !== "production" && !process.env.FUNCTIONS_EMULATOR) {
     console.log(`\n📡 API endpoints available at /api/*`);
   });
 }
+
+export { app };
 
 // Export the Firebase Function
 export const api = onRequest({ cors: true, maxInstances: 10 }, app);

@@ -6,30 +6,39 @@ import { trackEvent } from "../lib/firebase";
 
 import { apiFetch } from "../lib/api";
 import { getDefaultRouteForMode, getMode } from "../lib/appMode";
+import { PORTFOLIO_PRESETS, type PortfolioPresetId } from "@stock/shared";
 
 export function AuthForm() {
   const router = useRouter();
   const [isLogin, setIsLogin] = useState(true);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [preset, setPreset] = useState<PortfolioPresetId>("standard");
   const [error, setError] = useState("");
+  const [notice, setNotice] = useState("");
   const [loading, setLoading] = useState(false);
 
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
     setLoading(true);
     setError("");
+    setNotice("");
     const endpoint = isLogin ? "/auth/login" : "/auth/signup";
     
     try {
       const data = await apiFetch<any>(endpoint, {
         method: "POST",
-        body: JSON.stringify({ email, password })
+        body: JSON.stringify(isLogin ? { email, password } : { email, password, portfolioPreset: preset })
       });
       
       trackEvent("auth_success", { method: isLogin ? "login" : "signup" });
       localStorage.setItem("token", data.token);
       const mode = getMode() ?? "personal";
+      if (!isLogin && data.onboarding?.verificationRequired) {
+        setNotice("Account created. Check your inbox so we can keep the updates flowing.");
+        window.setTimeout(() => router.push(getDefaultRouteForMode(mode)), 450);
+        return;
+      }
       router.push(getDefaultRouteForMode(mode));
     } catch (err: any) {
       console.error("Auth error:", err);
@@ -44,12 +53,12 @@ export function AuthForm() {
     <div className="w-full max-w-md space-y-6 rounded-3xl bg-white p-8 shadow-2xl border border-slate-100">
       <div className="space-y-2 text-center">
         <h1 className="text-3xl font-bold tracking-tight text-slate-900">
-          {isLogin ? "Welcome Back" : "Start Trading"}
+          {isLogin ? "Welcome back" : "Pick your starter pack"}
         </h1>
         <p className="text-slate-500">
           {isLogin 
-            ? "Log in to manage your $10k virtual portfolio." 
-            : "Join the simulator and get your $10,000 starting balance!"}
+            ? "Log in to manage your starter portfolio."
+            : "Choose a vibe and we’ll spin up your first portfolio automatically."}
         </p>
       </div>
 
@@ -77,9 +86,45 @@ export function AuthForm() {
           />
         </div>
 
+        {!isLogin ? (
+          <div className="space-y-3">
+            <p className="text-sm font-medium text-slate-700 ml-1">Starter strategy</p>
+            <div className="grid gap-3 sm:grid-cols-3">
+              {PORTFOLIO_PRESETS.map((item) => {
+                const selected = preset === item.id;
+                return (
+                  <button
+                    key={item.id}
+                    type="button"
+                    onClick={() => setPreset(item.id)}
+                    className={`rounded-2xl border px-3 py-3 text-left transition ${
+                      selected
+                        ? "border-blue-500 bg-blue-50 shadow-sm"
+                        : "border-slate-200 bg-slate-50 hover:bg-slate-100"
+                    }`}
+                  >
+                    <div className="flex items-center justify-between gap-2">
+                      <span className="text-sm font-black text-slate-900">{item.name}</span>
+                      <span className="text-[10px] font-bold uppercase tracking-[0.2em] text-slate-400">
+                        {item.risk}
+                      </span>
+                    </div>
+                    <p className="mt-1 text-xs text-slate-600">{item.tagline}</p>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        ) : null}
+
         {error ? (
-          <div className="rounded-xl bg-red-50 p-3 text-sm text-red-600 border border-red-100 animate-shake">
+          <div className="rounded-xl bg-red-50 p-3 text-sm text-red-600 border border-red-100">
             {error}
+          </div>
+        ) : null}
+        {notice ? (
+          <div className="rounded-xl bg-emerald-50 p-3 text-sm text-emerald-700 border border-emerald-100">
+            {notice}
           </div>
         ) : null}
 
@@ -88,7 +133,7 @@ export function AuthForm() {
           disabled={loading}
           className="w-full rounded-2xl bg-blue-600 px-4 py-4 font-semibold text-white shadow-lg shadow-blue-200 hover:bg-blue-700 focus:ring-4 focus:ring-blue-100 disabled:opacity-60 transition-all transform active:scale-[0.98]"
         >
-          {loading ? "Processing..." : (isLogin ? "Sign In" : "Create Account")}
+          {loading ? "Processing..." : (isLogin ? "Sign in" : "Create my portfolio")}
         </button>
       </form>
 

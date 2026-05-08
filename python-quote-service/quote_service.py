@@ -1,5 +1,11 @@
 import os
+import time
 from datetime import datetime, timezone
+from threading import Lock
+try:
+    from zoneinfo import ZoneInfo
+except ImportError:  # pragma: no cover
+    ZoneInfo = None
 
 import requests
 import yfinance as yf
@@ -18,6 +24,46 @@ SUPPORTED_SYMBOLS = {
     "VT", "GME", "AMC", "MSTR"
 }
 ALPHA_VANTAGE_API_KEY = os.getenv("ALPHA_VANTAGE_API_KEY", "").strip()
+_cache_lock = Lock()
+_quote_cache: dict[str, tuple[float, dict]] = {}
+_history_cache: dict[str, tuple[float, dict]] = {}
+
+
+def _is_market_open_now() -> bool:
+    now = datetime.now(timezone.utc)
+    # Use New York time when available; otherwise fall back to UTC.
+    et = now.astimezone(ZoneInfo("America/New_York")) if ZoneInfo else now
+    day = et.weekday()
+    if day >= 5:
+        return False
+    minutes = et.hour * 60 + et.minute
+    return 9 * 60 + 30 <= minutes < 16 * 60
+
+
+def _cache_ttl_seconds(kind: str) -> int:
+    open_market = _is_market_open_now()
+    if kind == "quote":
+        return 20 if open_market else 600
+    if kind == "history":
+        return 300 if open_market else 3600
+    return 60
+
+
+def _get_cached(cache: dict[str, tuple[float, dict]], key: str):
+    with _cache_lock:
+        entry = cache.get(key)
+    if not entry:
+        return None
+    expires_at, payload = entry
+    if time.time() >= expires_at:
+        return None
+    return payload
+
+
+def _set_cached(cache: dict[str, tuple[float, dict]], key: str, payload: dict, ttl_seconds: int):
+    with _cache_lock:
+        cache[key] = (time.time() + ttl_seconds, payload)
+    return payload
 
 
 def _alpha_vantage_quote(symbol: str):
@@ -91,14 +137,26 @@ def quote(
     if normalized not in SUPPORTED_SYMBOLS:
         raise HTTPException(status_code=400, detail=f"Unsupported symbol: {normalized}")
 
+    cache_key = f"quote:{normalized}"
+    cached = _get_cached(_quote_cache, cache_key)
+    if cached is not None:
+        return cached
+
     quote_data = _alpha_vantage_quote(normalized)
     if quote_data is None:
         quote_data = _yfinance_quote(normalized)
     if quote_data is None:
+        stale = None
+        with _cache_lock:
+            stale_entry = _quote_cache.get(cache_key)
+            if stale_entry:
+                stale = stale_entry[1]
+        if stale is not None:
+            return stale
         raise HTTPException(status_code=503, detail="No live quote available")
 
     quote_data["asOf"] = datetime.now(timezone.utc).isoformat()
-    return quote_data
+    return _set_cached(_quote_cache, cache_key, quote_data, _cache_ttl_seconds("quote"))
 
 
 def _history_config(timeframe: str):
@@ -123,43 +181,56 @@ def history(
     if normalized not in SUPPORTED_SYMBOLS:
         raise HTTPException(status_code=400, detail=f"Unsupported symbol: {normalized}")
 
+    cache_key = f"history:{normalized}:{timeframe.upper()}"
+    cached = _get_cached(_history_cache, cache_key)
+    if cached is not None:
+        return cached
+
     config = _history_config(timeframe)
     ticker = yf.Ticker(normalized)
-    hist = ticker.history(
-        period=config["period"],
-        interval=config["interval"],
-        auto_adjust=False,
-        prepost=True,
-    )
-
-    if hist.empty:
-        raise HTTPException(status_code=503, detail="No historical data available")
-
-    points = []
-    for index, row in hist.iterrows():
-        timestamp = index.to_pydatetime()
-        if timestamp.tzinfo is None:
-            timestamp = timestamp.replace(tzinfo=timezone.utc)
-        else:
-            timestamp = timestamp.astimezone(timezone.utc)
-
-        close = row.get("Close")
-        if close is None:
-            continue
-
-        points.append(
-            {
-                "timestamp": timestamp.isoformat(),
-                "price": round(float(close), 2),
-            }
+    try:
+        hist = ticker.history(
+            period=config["period"],
+            interval=config["interval"],
+            auto_adjust=False,
+            prepost=True,
         )
 
+        points = []
+        for index, row in hist.iterrows():
+            timestamp = index.to_pydatetime()
+            if timestamp.tzinfo is None:
+                timestamp = timestamp.replace(tzinfo=timezone.utc)
+            else:
+                timestamp = timestamp.astimezone(timezone.utc)
+
+            close = row.get("Close")
+            if close is None:
+                continue
+
+            points.append(
+                {
+                    "timestamp": timestamp.isoformat(),
+                    "price": round(float(close), 2),
+                }
+            )
+    except Exception:
+        points = []
+
     if not points:
+        stale = None
+        with _cache_lock:
+            stale_entry = _history_cache.get(cache_key)
+            if stale_entry:
+                stale = stale_entry[1]
+        if stale is not None:
+            return stale
         raise HTTPException(status_code=503, detail="No historical data available")
 
-    return {
+    payload = {
         "symbol": normalized,
         "timeframe": timeframe.upper(),
         "points": points,
         "asOf": datetime.now(timezone.utc).isoformat(),
     }
+    return _set_cached(_history_cache, cache_key, payload, _cache_ttl_seconds("history"))

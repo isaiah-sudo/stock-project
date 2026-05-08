@@ -12,6 +12,11 @@ model User {
   email            String   @unique
   passwordHash     String
   experiencePoints Int      @default(0)
+  portfolioPreset  String   @default("standard")
+  emailVerifiedAt  DateTime?
+  emailVerificationToken String?  @unique
+  emailVerificationExpiresAt DateTime?
+  lastPortfolioDigestSentAt DateTime?
   createdAt        DateTime @default(now())
 
   paperAccount     PaperAccount?

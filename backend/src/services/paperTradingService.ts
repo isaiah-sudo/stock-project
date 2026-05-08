@@ -1,6 +1,7 @@
 import type { Portfolio, Transaction } from "@stock/shared";
 import { prisma } from "../lib/prisma.js";
 import { computePortfolioDayMetrics } from "./portfolioMetrics.js";
+import { buildStarterPortfolio } from "./portfolioSeed.js";
 
 type SupportedSymbol =
   "AAPL" | "MSFT" | "NVDA" | "AMZN" | "GOOGL" | "TSLA" | "META" | "BRK-B" | "UNH" | "V" |
@@ -149,13 +150,16 @@ class PaperTradingService {
     return timeInMinutes >= openTime && timeInMinutes < closeTime;
   }
 
-  async linkPaperAccount(userId: string, startingCash = 100_000) {
+  async linkPaperAccount(userId: string, startingCash = 10_000) {
     const existing = await prisma.paperAccount.findUnique({
       where: { userId }
     });
 
     if (existing?.linked) {
-      return { linked: true, alreadyLinked: true, cashBalance: existing.cashBalance };
+      const positionCount = await prisma.paperPosition.count({ where: { userId } });
+      if (positionCount > 0) {
+        return { linked: true, alreadyLinked: true, cashBalance: existing.cashBalance };
+      }
     }
 
     const account = await prisma.paperAccount.upsert({
@@ -168,7 +172,46 @@ class PaperTradingService {
       }
     });
 
-    return { linked: true, alreadyLinked: false, cashBalance: account.cashBalance };
+    const positionCount = await prisma.paperPosition.count({ where: { userId } });
+    let finalCashBalance = account.cashBalance;
+    if (positionCount === 0) {
+      const user = await prisma.user.findUnique({
+        where: { id: userId },
+        select: { portfolioPreset: true }
+      });
+      const starter = await buildStarterPortfolio(user?.portfolioPreset ?? null, (symbol) => this.getQuote(symbol));
+      await prisma.$transaction(async (tx: any) => {
+        const duplicateCount = await tx.paperPosition.count({ where: { userId } });
+        if (duplicateCount > 0) {
+          return;
+        }
+
+        for (const position of starter.positions) {
+          await tx.paperPosition.create({
+            data: {
+              userId,
+              symbol: position.symbol,
+              name: position.name,
+              quantity: position.quantity,
+              averageCost: position.averageCost
+            }
+          });
+        }
+
+        await tx.paperAccount.update({
+          where: { userId },
+          data: { cashBalance: starter.cashBalance }
+        });
+
+        await tx.user.update({
+          where: { id: userId },
+          data: { portfolioPreset: starter.preset.id }
+        });
+      });
+      finalCashBalance = starter.cashBalance;
+    }
+
+    return { linked: true, alreadyLinked: Boolean(existing?.linked), cashBalance: finalCashBalance };
   }
 
   async isLinked(userId: string) {
@@ -757,7 +800,7 @@ class PaperTradingService {
         email: account.user.email.split("@")[0],
         totalValue: Number((account.cashBalance + holdingsValue).toFixed(2)),
         exp: account.user.experiencePoints,
-        score: Number((account.cashBalance + holdingsValue - 100000).toFixed(2)) + (account.user.experiencePoints * 50)
+        score: Number((account.cashBalance + holdingsValue - 10000).toFixed(2)) + (account.user.experiencePoints * 50)
       };
     });
 

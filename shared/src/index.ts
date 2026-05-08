@@ -1,4 +1,5 @@
 export type RiskLevel = "low" | "moderate" | "high";
+export * from "./portfolioPresets";
 
 export interface Holding {
   symbol: string;

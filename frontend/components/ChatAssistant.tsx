@@ -15,7 +15,7 @@ export function ChatAssistant() {
     {
       role: "assistant",
       text:
-        "Hi! I'm your AI financial advisor. I can review your portfolio and provide personalized investment advice, including specific buy/sell recommendations, rebalancing suggestions, and risk management strategies."
+        "Yo. I’m your portfolio goblin. Ask me what’s thriving, what’s cooked, or what to buy next."
     }
   ]);
   const [loading, setLoading] = useState(false);
@@ -39,7 +39,7 @@ export function ChatAssistant() {
         ...next,
         {
           role: "assistant",
-          text: "I could not generate a response. Check backend connectivity and Ollama status."
+          text: "The coach tripped over its own shoelaces. Check the backend and Ollama, then try again."
         }
       ]);
     } finally {
@@ -77,7 +77,7 @@ export function ChatAssistant() {
         <input
           value={input}
           onChange={(e) => setInput(e.target.value)}
-          placeholder="Ask for personalized investment advice, buy/sell recommendations, or portfolio analysis..."
+          placeholder="Ask for a quick portfolio check, a buy/sell opinion, or a plain-English explain-it-like-I’m-14 answer..."
           className="flex-1 rounded-xl border border-slate-200 dark:border-slate-600 dark:bg-slate-700 dark:text-slate-200 px-3 py-2"
         />
         <button

@@ -14,7 +14,7 @@ export function PortfolioOverview({ portfolio }: { portfolio: Portfolio }) {
   
   // Blended Ranking Logic
   const xp = portfolio.experiencePoints ?? 0;
-  const profit = portfolio.totalValue - 100000;
+  const profit = portfolio.totalValue - 10000;
   const traderScore = Number((profit + (xp * 50)).toFixed(2));
   const displayScore = normalizeScore(traderScore);
   

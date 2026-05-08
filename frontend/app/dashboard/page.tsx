@@ -14,6 +14,7 @@ import { TutorialOverlay, type TutorialStep } from "../../components/TutorialOve
 import { dismissEducationTutorial, getMode, shouldShowEducationTutorial } from "../../lib/appMode";
 import { LearnMore } from "../../components/LearnMore";
 import { TrophyCard } from "../../components/TrophyCard";
+import { PortfolioShareCard } from "../../components/PortfolioShareCard";
 import { getCurrentLevel, getNextLevel, getLevelProgress } from "@stock/shared";
 import { type BackgroundEffect, getBackgroundEffect } from "../../lib/backgroundTheme";
 
@@ -45,9 +46,8 @@ export default function DashboardPage() {
   const [displayDayPerf, setDisplayDayPerf] = useState(0);
 
   const initialBalance = 10000;
-  const marketValue = portfolio ? portfolio.totalValue - portfolio.cashBalance : 0;
+  const holdingsCount = portfolio?.holdings.length ?? 0;
   const totalPerformanceDollar = portfolio ? portfolio.totalValue - initialBalance : 0;
-  const totalPerformancePct = portfolio ? Number(((totalPerformanceDollar / initialBalance) * 100).toFixed(2)) : 0;
   const dayPerformanceDollar = portfolio?.dayChangeDollar ?? 0;
 
   // Count-up animation on first portfolio load
@@ -255,39 +255,23 @@ export default function DashboardPage() {
               <div className={`space-y-6 transition-all duration-500 ease-out ${activeTab === "chat" ? "flex-1" : "w-full"}`}>
                 <section id="summary-panel" className={`rounded-[2rem] border border-slate-200 bg-white dark:bg-slate-800 dark:border-slate-700 p-3 shadow-sm sm:p-6 ${highlightClass("summary-panel")}`}>
                 <div className="mb-3 sm:mb-6">
-                  <div className="mb-2 text-base font-bold text-emerald-500 dark:text-emerald-400 sm:mb-3 sm:text-xl">Financial Summary</div>
+                  <div className="mb-2 text-xs font-black uppercase tracking-[0.3em] text-emerald-500 dark:text-emerald-400 sm:mb-3">Starter overview</div>
                   <div>
                     <p className="text-sm font-semibold text-slate-500 dark:text-slate-400 mb-1">
                       Net Worth
                       {isEducational && <LearnMore title="Net Worth" content="The total value of all your cash and stock investments combined. This is your total wealth in the simulator." />}
                     </p>
                     <div className="text-xl font-black text-slate-900 dark:text-slate-100 sm:text-3xl font-num">{formatCurrency(displayNetWorth)}</div>
+                    <p className={`mt-1 text-sm font-semibold ${totalPerformanceDollar >= 0 ? "text-emerald-600" : "text-rose-600"}`}>
+                      {totalPerformanceDollar >= 0 ? "+" : ""}{formatCurrency(totalPerformanceDollar)} since launch
+                    </p>
                   </div>
                 </div>
-                <div className="grid grid-cols-2 gap-3 sm:gap-4 md:grid-cols-2 xl:grid-cols-4">
+                <div className="grid grid-cols-1 gap-3 sm:grid-cols-3 sm:gap-4">
                   <div>
                     <p className="text-sm font-semibold text-slate-500 dark:text-slate-400">
-                      Market Value
-                      {isEducational && <LearnMore title="Market Value" content="The current total worth of all the stocks you own if you were to sell them right now." />}
-                    </p>
-                    <p className="text-lg font-bold text-slate-900 dark:text-slate-100 sm:text-2xl font-num">{formatCurrency(marketValue)}</p>
-                  </div>
-                  <div>
-                    <p className="text-sm font-semibold text-slate-500 dark:text-slate-400">
-                      Total Performance
-                      {isEducational && <LearnMore title="Total Performance" content="How much your account has grown (or shrunk) since you started with your initial $10,000 balance." />}
-                    </p>
-                    <p className={`text-lg font-bold sm:text-2xl font-num ${totalPerformanceDollar >= 0 ? "text-emerald-600" : "text-rose-600"}`}>
-                      {totalPerformanceDollar >= 0 ? "+" : ""}{formatCurrency(totalPerformanceDollar)}
-                    </p>
-                    <p className="text-sm text-slate-500 dark:text-slate-400 font-num">
-                      {totalPerformancePct >= 0 ? "+" : ""}{totalPerformancePct.toFixed(2)}%
-                    </p>
-                  </div>
-                  <div>
-                    <p className="text-sm font-semibold text-slate-500 dark:text-slate-400">
-                      Day Performance
-                      {isEducational && <LearnMore title="Day Performance" content="How much your portfolio value changed specifically since the market opened today." />}
+                      Today
+                      {isEducational && <LearnMore title="Today" content="How much your portfolio moved since the market opened." />}
                     </p>
                     <p className={`text-lg font-bold sm:text-2xl font-num ${dayPerformanceDollar >= 0 ? "text-emerald-600" : "text-rose-600"}`}>
                       {dayPerformanceDollar >= 0 ? "+" : ""}{formatCurrency(displayDayPerf)}
@@ -298,10 +282,22 @@ export default function DashboardPage() {
                   </div>
                   <div>
                     <p className="text-sm font-semibold text-slate-500 dark:text-slate-400">
-                      Available Cash
-                      {isEducational && <LearnMore title="Available Cash" content="The money you have 'on hand' to buy new stocks. It doesn't include the value of stocks you already own." />}
+                      Cash
+                      {isEducational && <LearnMore title="Cash" content="The money you can use right now to buy something new." />}
                     </p>
                     <p className="text-lg font-bold text-slate-900 dark:text-slate-100 sm:text-2xl font-num">{formatCurrency(portfolio.cashBalance)}</p>
+                  </div>
+                  <div>
+                    <p className="text-sm font-semibold text-slate-500 dark:text-slate-400">
+                      Holdings
+                      {isEducational && <LearnMore title="Holdings" content="How many different stocks or funds you currently own." />}
+                    </p>
+                    <p className="text-lg font-bold text-slate-900 dark:text-slate-100 sm:text-2xl font-num">
+                      {holdingsCount}
+                    </p>
+                    <p className="text-sm text-slate-500 dark:text-slate-400">
+                      {holdingsCount === 0 ? "no positions yet" : holdingsCount === 1 ? "position owned" : "positions owned"}
+                    </p>
                   </div>
                 </div>
 
@@ -376,6 +372,8 @@ export default function DashboardPage() {
                   </div>
                 </div>
               </section>
+
+              <PortfolioShareCard portfolio={portfolio} />
 
               <section className="rounded-[2rem] border border-slate-200 bg-white dark:bg-slate-800 dark:border-slate-700 p-2 shadow-sm sm:p-6">
                 <PerformanceChart portfolio={portfolio} marketOpen={marketOpen} />

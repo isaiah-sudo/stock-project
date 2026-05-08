@@ -47,6 +47,13 @@ Production-ready starter for a beginner paper trading stock game app:
 - Backend uses `http://127.0.0.1:8001` to fetch quotes.
 - If both providers fail, paper trading falls back to synthetic prices so orders still work.
 
+## Deployment
+- The backend now reads its allowed browser origins from `FRONTEND_URL`, `PUBLIC_APP_URL`, or `CORS_ORIGINS`.
+- For Fly.io, set `DATABASE_URL`, `FRONTEND_URL`, `PUBLIC_APP_URL`, `APP_BASE_URL`, and `CRON_SECRET` in the app secrets.
+- For Vercel, point `NEXT_PUBLIC_API_BASE_URL` at the deployed backend URL and keep the backend on Fly or another Node host.
+- Email verification and bi-weekly digests are wired through Resend when `RESEND_API_KEY` and `RESEND_FROM_EMAIL` are present.
+
 ## Notes
 - Some stocks are included in the paper trade but to add more you need to add them to the `python-quote-service/stocks.txt` file.
 - AI responses include safety guardrails to avoid personalized financial advice.
+- New signups receive one of three starter portfolios: Conservative, Standard, or Aggressive.

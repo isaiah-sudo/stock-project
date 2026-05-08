@@ -4,7 +4,11 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { getDefaultRouteForMode, getMode } from "../lib/appMode";
 
-const API_BASE = process.env.NEXT_PUBLIC_API_BASE_URL ?? "http://localhost:4000/api";
+const API_BASE =
+  process.env.NEXT_PUBLIC_API_BASE_URL ??
+  (typeof window !== "undefined" && window.location.hostname === "localhost"
+    ? "http://localhost:4000/api"
+    : "/api");
 
 export function LoginForm() {
   const router = useRouter();
@@ -29,7 +33,7 @@ export function LoginForm() {
       const mode = getMode() ?? "personal";
       router.push(getDefaultRouteForMode(mode));
     } catch {
-      setError("Login failed. Use demo@example.com / password123.");
+      setError("Login failed. Either the backend is snoozing or that email/password combo is bogus.");
     } finally {
       setLoading(false);
     }
@@ -52,7 +56,7 @@ export function LoginForm() {
       const mode = getMode() ?? "personal";
       router.push(getDefaultRouteForMode(mode));
     } catch {
-      setError("Demo login failed. Check that the backend server is running and accessible.");
+      setError("Demo login failed. The backend probably needs a wake-up call.");
     } finally {
       setLoading(false);
     }
