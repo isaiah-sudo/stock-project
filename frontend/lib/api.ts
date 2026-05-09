@@ -11,6 +11,31 @@ export function getToken() {
 
 export async function apiFetch<T>(path: string, init?: RequestInit): Promise<T> {
   const token = getToken();
+
+  function formatApiError(data: any, status: number) {
+    if (typeof data === "string") {
+      return data;
+    }
+
+    if (data && typeof data === "object") {
+      if (typeof data.error === "string") {
+        return data.error;
+      }
+
+      if (data.error && typeof data.error === "object") {
+        return data.error.message || JSON.stringify(data.error);
+      }
+
+      if (typeof data.message === "string") {
+        return data.message;
+      }
+
+      return JSON.stringify(data);
+    }
+
+    return `API error ${status}`;
+  }
+
   try {
     const response = await fetch(`${API_BASE}${path}`, {
       ...init,
@@ -37,12 +62,13 @@ export async function apiFetch<T>(path: string, init?: RequestInit): Promise<T> 
     }
 
     if (!response.ok) {
-      throw new Error(data?.error || `API error ${response.status}`);
+      throw new Error(formatApiError(data, response.status));
     }
 
     return data as T;
   } catch (error: any) {
-    if (error.name === "TypeError" || error.message.includes("Failed to fetch")) {
+    const message = typeof error?.message === "string" ? error.message : "";
+    if (error?.name === "TypeError" || message.includes("Failed to fetch")) {
       throw new Error("Backend unreachable. Please check if the server is running.");
     }
     throw error;

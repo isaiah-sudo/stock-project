@@ -20,6 +20,32 @@ const credentialsSchema = z.object({
 
 const JWT_SECRET = process.env.JWT_SECRET || "gamified-simulator-secret-key-123";
 
+async function seedAllPortfolios(tx: any, userId: string) {
+  for (const preset of shared.PORTFOLIO_PRESETS) {
+    const starter = await buildStarterPortfolio(preset.id, (symbol) => paperTradingService.getQuote(symbol));
+    const portfolio = await tx.paperPortfolio.create({
+      data: {
+        userId,
+        preset: preset.id,
+        cashBalance: starter.cashBalance,
+        linked: true
+      }
+    });
+
+    for (const position of starter.positions) {
+      await tx.paperPositionV2.create({
+        data: {
+          portfolioId: portfolio.id,
+          symbol: position.symbol,
+          name: position.name,
+          quantity: position.quantity,
+          averageCost: position.averageCost
+        }
+      });
+    }
+  }
+}
+
 router.post("/signup", async (req, res) => {
   const parsed = credentialsSchema.safeParse(req.body);
   if (!parsed.success) {
@@ -39,8 +65,6 @@ router.post("/signup", async (req, res) => {
 
     const verificationToken = createVerificationToken();
     const verificationExpiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
-    const starter = await buildStarterPortfolio(preset.id, (symbol) => paperTradingService.getQuote(symbol));
-
     const user = await prisma.$transaction(async (tx: any) => {
       const newUser = await tx.user.create({
         data: {
@@ -54,25 +78,7 @@ router.post("/signup", async (req, res) => {
         }
       });
 
-      await tx.paperAccount.create({
-        data: {
-          userId: newUser.id,
-          cashBalance: starter.cashBalance,
-          linked: true
-        }
-      });
-
-      for (const position of starter.positions) {
-        await tx.paperPosition.create({
-          data: {
-            userId: newUser.id,
-            symbol: position.symbol,
-            name: position.name,
-            quantity: position.quantity,
-            averageCost: position.averageCost
-          }
-        });
-      }
+      await seedAllPortfolios(tx, newUser.id);
 
       return newUser;
     });
@@ -170,6 +176,22 @@ router.post("/verify-email", async (req, res) => {
   });
 
   return res.json({ ok: true, message: "Email verified. Your account is officially less sketchy." });
+});
+
+router.post("/portfolio-preset", requireAuth, async (req: AuthRequest, res) => {
+  const schema = z.object({ preset: z.string().min(1) });
+  const parsed = schema.safeParse(req.body);
+  if (!parsed.success) {
+    return res.status(400).json({ error: parsed.error.flatten() });
+  }
+
+  const selected = shared.getPortfolioPreset(parsed.data.preset);
+  await prisma.user.update({
+    where: { id: req.user!.userId },
+    data: { portfolioPreset: selected.id }
+  });
+
+  return res.json({ ok: true, portfolioPreset: selected.id });
 });
 
 router.get("/me", requireAuth, async (req: AuthRequest, res) => {

@@ -23,8 +23,8 @@ export class BrokerageService {
     };
   }
 
-  async getPortfolio(userId: string): Promise<Portfolio> {
-    const paperPortfolio = await paperTradingService.getPortfolio(userId);
+  async getPortfolio(userId: string, preset?: string | null): Promise<Portfolio> {
+    const paperPortfolio = await paperTradingService.getPortfolio(userId, preset);
     if (paperPortfolio) return paperPortfolio;
     // TODO: Fetch live brokerage portfolio when linked with a real provider.
     // For demo mode, refresh mock holdings with live quotes when available.
@@ -54,8 +54,8 @@ export class BrokerageService {
     };
   }
 
-  async getTransactions(userId: string): Promise<Transaction[]> {
-    const paperTransactions = await paperTradingService.getTransactions(userId);
+  async getTransactions(userId: string, preset?: string | null): Promise<Transaction[]> {
+    const paperTransactions = await paperTradingService.getTransactions(userId, preset);
     if (paperTransactions) return paperTransactions;
     // TODO: Fetch transaction history from real brokerage provider.
     return mockTransactions;

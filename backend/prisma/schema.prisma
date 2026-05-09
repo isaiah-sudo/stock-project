@@ -20,6 +20,7 @@ model User {
   createdAt        DateTime @default(now())
 
   paperAccount     PaperAccount?
+  paperPortfolios  PaperPortfolio[]
   achievements     Achievement[]
   portfolioSnapshots PortfolioSnapshot[]
 }
@@ -88,4 +89,62 @@ model PortfolioSnapshot {
 
   @@index([userId, timestamp(sort: Desc)])
   @@map("portfolio_snapshots")
+}
+
+model PaperPortfolio {
+  id        String   @id @default(cuid())
+  userId    String
+  preset    String
+  cashBalance Float  @default(10000)
+  linked    Boolean  @default(false)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user         User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  positions    PaperPositionV2[]
+  transactions PaperTransactionV2[]
+  snapshots    PortfolioSnapshotV2[]
+
+  @@unique([userId, preset])
+  @@map("paper_portfolios")
+}
+
+model PaperPositionV2 {
+  id           String   @id @default(cuid())
+  portfolioId  String
+  symbol       String
+  name         String
+  quantity     Int
+  averageCost  Float
+
+  portfolio    PaperPortfolio @relation(fields: [portfolioId], references: [id], onDelete: Cascade)
+
+  @@unique([portfolioId, symbol])
+  @@map("paper_positions_v2")
+}
+
+model PaperTransactionV2 {
+  id           String   @id @default(cuid())
+  portfolioId  String
+  symbol       String
+  side         String
+  quantity     Int
+  price        Float
+  occurredAt   DateTime @default(now())
+
+  portfolio    PaperPortfolio @relation(fields: [portfolioId], references: [id], onDelete: Cascade)
+
+  @@map("paper_transactions_v2")
+}
+
+model PortfolioSnapshotV2 {
+  id               String   @id @default(cuid())
+  portfolioId      String
+  totalMarketValue Float
+  timestamp        DateTime @default(now())
+
+  portfolio        PaperPortfolio @relation(fields: [portfolioId], references: [id], onDelete: Cascade)
+
+  @@index([portfolioId, timestamp(sort: Desc)])
+  @@map("portfolio_snapshots_v2")
 }

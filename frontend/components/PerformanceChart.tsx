@@ -13,6 +13,7 @@ import {
   YAxis,
 } from "recharts";
 import { apiFetch } from "../lib/api";
+import { getPortfolioPreset } from "../lib/portfolioPreset";
 
 type Timeframe = "1D" | "1W" | "1M" | "ALL";
 type BenchmarkSymbol = "SPY" | "QQQ";
@@ -426,7 +427,8 @@ export function PerformanceChart({ portfolio, marketOpen }: PerformanceChartProp
     setLoading(true);
     setError("");
 
-    apiFetch<PerformanceHistoryResponse>(`/paper/performance?timeframe=${timeframe}&benchmark=${benchmarkSymbol}`)
+    const preset = getPortfolioPreset();
+    apiFetch<PerformanceHistoryResponse>(`/paper/performance?timeframe=${timeframe}&benchmark=${benchmarkSymbol}&preset=${preset}`)
       .then((response) => {
         if (!cancelled) {
           setHistory(response);
@@ -447,7 +449,7 @@ export function PerformanceChart({ portfolio, marketOpen }: PerformanceChartProp
     return () => {
       cancelled = true;
     };
-  }, [benchmarkSymbol, timeframe, portfolio.totalValue, portfolio.cashBalance, portfolio.holdings.length]);
+  }, [benchmarkSymbol, timeframe, portfolio.accountId, portfolio.totalValue, portfolio.cashBalance, portfolio.holdings.length]);
 
   const liveMarketValue = Number((portfolio.totalValue - portfolio.cashBalance).toFixed(2));
   const liveDayChangeDollar = Number((portfolio.dayChangeDollar ?? 0).toFixed(2));
@@ -487,7 +489,7 @@ export function PerformanceChart({ portfolio, marketOpen }: PerformanceChartProp
         benchmarkValue: benchmarkByTimestamp.get(point.timestamp) ?? null,
       } satisfies ChartPoint;
     });
-  }, [history, portfolio.cashBalance, portfolio.totalValue, timeframe]);
+  }, [history, portfolio.accountId, portfolio.cashBalance, portfolio.totalValue, timeframe]);
 
   const startPoint = chartData[0];
   const currentValue = liveMarketValue;

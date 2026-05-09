@@ -6,6 +6,7 @@ import { trackEvent } from "../lib/firebase";
 
 import { apiFetch } from "../lib/api";
 import { getDefaultRouteForMode, getMode } from "../lib/appMode";
+import { setPortfolioPreset } from "../lib/portfolioPreset";
 import { PORTFOLIO_PRESETS, type PortfolioPresetId } from "@stock/shared";
 
 export function AuthForm() {
@@ -24,15 +25,18 @@ export function AuthForm() {
     setError("");
     setNotice("");
     const endpoint = isLogin ? "/auth/login" : "/auth/signup";
-    
+
     try {
       const data = await apiFetch<any>(endpoint, {
         method: "POST",
         body: JSON.stringify(isLogin ? { email, password } : { email, password, portfolioPreset: preset })
       });
-      
+
       trackEvent("auth_success", { method: isLogin ? "login" : "signup" });
       localStorage.setItem("token", data.token);
+      if (data?.user?.portfolioPreset) {
+        setPortfolioPreset(data.user.portfolioPreset);
+      }
       const mode = getMode() ?? "personal";
       if (!isLogin && data.onboarding?.verificationRequired) {
         setNotice("Account created. Check your inbox so we can keep the updates flowing.");
@@ -56,9 +60,9 @@ export function AuthForm() {
           {isLogin ? "Welcome back" : "Pick your starter pack"}
         </h1>
         <p className="text-slate-500">
-          {isLogin 
+          {isLogin
             ? "Log in to manage your starter portfolio."
-            : "Choose a vibe and we’ll spin up your first portfolio automatically."}
+            : "Choose a vibe and we'll spin up your first portfolio automatically."}
         </p>
       </div>
 

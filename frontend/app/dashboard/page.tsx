@@ -1,7 +1,6 @@
 "use client";
 
-import Link from "next/link";
-import { useEffect, useState, useRef, useCallback, useMemo } from "react";
+import { useEffect, useState, useRef, useMemo } from "react";
 import dynamic from "next/dynamic";
 import type { Portfolio } from "@stock/shared";
 import { apiFetch } from "../../lib/api";
@@ -15,8 +14,9 @@ import { dismissEducationTutorial, getMode, shouldShowEducationTutorial } from "
 import { LearnMore } from "../../components/LearnMore";
 import { TrophyCard } from "../../components/TrophyCard";
 import { PortfolioShareCard } from "../../components/PortfolioShareCard";
-import { getCurrentLevel, getNextLevel, getLevelProgress } from "@stock/shared";
+import { PORTFOLIO_PRESETS, getCurrentLevel, getNextLevel, getLevelProgress, type PortfolioPresetId } from "@stock/shared";
 import { type BackgroundEffect, getBackgroundEffect } from "../../lib/backgroundTheme";
+import { getPortfolioPreset, onPortfolioPresetChange } from "../../lib/portfolioPreset";
 
 interface Achievement {
   id: string;
@@ -41,6 +41,7 @@ export default function DashboardPage() {
   const [isSummaryExpanded, setIsSummaryExpanded] = useState(false);
   const [achievements, setAchievements] = useState<Achievement[]>([]);
   const [bgEffect, setBgEffect] = useState<BackgroundEffect>("solid");
+  const [selectedPreset, setSelectedPreset] = useState<PortfolioPresetId>("standard");
   const hasCountedUp = useRef(false);
   const [displayNetWorth, setDisplayNetWorth] = useState(0);
   const [displayDayPerf, setDisplayDayPerf] = useState(0);
@@ -92,8 +93,10 @@ export default function DashboardPage() {
     return `$${value.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
   }
 
-  function loadPortfolio() {
-    apiFetch<Portfolio>("/paper/portfolio")
+  function loadPortfolio(preset: PortfolioPresetId = getPortfolioPreset()) {
+    const query = `?preset=${encodeURIComponent(preset)}`;
+    setError("");
+    apiFetch<Portfolio>(`/paper/portfolio${query}`)
       .then(setPortfolio)
       .catch((err) => {
         console.error(err);
@@ -121,13 +124,22 @@ export default function DashboardPage() {
     setShowTutorial(shouldShowEducationTutorial());
     setIsEducational(getMode() === "educational");
     setBgEffect(getBackgroundEffect());
-    loadPortfolio();
+    const initialPreset = getPortfolioPreset();
+    setSelectedPreset(initialPreset);
+    loadPortfolio(initialPreset);
     loadMarketStatus();
     const interval = window.setInterval(() => {
-      loadPortfolio();
+      loadPortfolio(getPortfolioPreset());
       loadMarketStatus();
     }, 30_000);
     return () => window.clearInterval(interval);
+  }, []);
+
+  useEffect(() => {
+    return onPortfolioPresetChange((nextPreset) => {
+      setSelectedPreset(nextPreset);
+      loadPortfolio(nextPreset);
+    });
   }, []);
 
   useEffect(() => {
@@ -256,6 +268,9 @@ export default function DashboardPage() {
                 <section id="summary-panel" className={`rounded-[2rem] border border-slate-200 bg-white dark:bg-slate-800 dark:border-slate-700 p-3 shadow-sm sm:p-6 ${highlightClass("summary-panel")}`}>
                 <div className="mb-3 sm:mb-6">
                   <div className="mb-2 text-xs font-black uppercase tracking-[0.3em] text-emerald-500 dark:text-emerald-400 sm:mb-3">Starter overview</div>
+                  <div className="mb-3 inline-flex items-center rounded-full border border-slate-200 dark:border-slate-600 bg-slate-50 dark:bg-slate-700 px-3 py-1 text-[11px] font-black uppercase tracking-[0.22em] text-slate-500 dark:text-slate-300">
+                    {PORTFOLIO_PRESETS.find((preset) => preset.id === selectedPreset)?.name ?? "Standard"} mode
+                  </div>
                   <div>
                     <p className="text-sm font-semibold text-slate-500 dark:text-slate-400 mb-1">
                       Net Worth

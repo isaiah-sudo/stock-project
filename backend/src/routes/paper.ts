@@ -18,7 +18,8 @@ router.post("/link", requireAuth, async (req: AuthRequest, res) => {
 
 router.get("/portfolio", requireAuth, async (req: AuthRequest, res) => {
   const userId = req.user!.userId;
-  const portfolio = await paperTradingService.getPortfolio(userId);
+  const preset = typeof req.query.preset === "string" ? req.query.preset : undefined;
+  const portfolio = await paperTradingService.getPortfolio(userId, preset);
   if (!portfolio) {
     return res.status(404).json({ error: "Paper account not linked." });
   }
@@ -33,7 +34,8 @@ router.get("/achievements", requireAuth, async (req: AuthRequest, res) => {
 
 router.get("/transactions", requireAuth, async (req: AuthRequest, res) => {
   const userId = req.user!.userId;
-  const transactions = await paperTradingService.getTransactions(userId);
+  const preset = typeof req.query.preset === "string" ? req.query.preset : undefined;
+  const transactions = await paperTradingService.getTransactions(userId, preset);
   return res.json(transactions || []);
 });
 
@@ -74,11 +76,13 @@ router.get("/performance", requireAuth, async (req: AuthRequest, res) => {
   if (!parsed.success) {
     return res.status(400).json({ error: parsed.error.flatten() });
   }
+  const preset = typeof req.query.preset === "string" ? req.query.preset : undefined;
 
   const history = await paperTradingService.getPerformanceHistory(
     req.user!.userId,
     parsed.data.timeframe,
-    parsed.data.benchmark
+    parsed.data.benchmark,
+    preset
   );
 
   if (!history) {
@@ -103,7 +107,8 @@ router.post("/order", requireAuth, async (req: AuthRequest, res) => {
     userId: req.user!.userId,
     symbol: parsed.data.symbol,
     side: parsed.data.side,
-    quantity: parsed.data.quantity
+    quantity: parsed.data.quantity,
+    preset: typeof req.body?.preset === "string" ? req.body.preset : undefined
   });
   if (!result.ok) {
     return res.status(400).json({ error: result.error });

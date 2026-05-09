@@ -3,6 +3,8 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { getDefaultRouteForMode, getMode } from "../lib/appMode";
+import { setPortfolioPreset } from "../lib/portfolioPreset";
+import { type PortfolioPresetId } from "@stock/shared";
 
 const API_BASE =
   process.env.NEXT_PUBLIC_API_BASE_URL ??
@@ -28,8 +30,11 @@ export function LoginForm() {
         body: JSON.stringify({ email, password })
       });
       if (!response.ok) throw new Error("Invalid credentials");
-      const data = (await response.json()) as { token: string };
+      const data = (await response.json()) as { token: string; user?: { portfolioPreset?: string } };
       localStorage.setItem("token", data.token);
+      if (data.user?.portfolioPreset) {
+        setPortfolioPreset(data.user.portfolioPreset as PortfolioPresetId);
+      }
       const mode = getMode() ?? "personal";
       router.push(getDefaultRouteForMode(mode));
     } catch {
@@ -51,8 +56,11 @@ export function LoginForm() {
         body: JSON.stringify({ email: "demo@example.com", password: "password123" })
       });
       if (!response.ok) throw new Error("Invalid credentials");
-      const data = (await response.json()) as { token: string };
+      const data = (await response.json()) as { token: string; user?: { portfolioPreset?: string } };
       localStorage.setItem("token", data.token);
+      if (data.user?.portfolioPreset) {
+        setPortfolioPreset(data.user.portfolioPreset as PortfolioPresetId);
+      }
       const mode = getMode() ?? "personal";
       router.push(getDefaultRouteForMode(mode));
     } catch {

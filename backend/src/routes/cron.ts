@@ -39,18 +39,18 @@ router.post("/portfolio-updates", async (req, res) => {
       email: true,
       portfolioPreset: true,
       lastPortfolioDigestSentAt: true,
-      paperAccount: { select: { linked: true } }
+      paperPortfolios: { select: { linked: true } }
     }
   });
 
   const results = [];
   for (const user of users) {
-    if (!user.paperAccount?.linked) {
+    if (!user.paperPortfolios?.some((portfolio) => portfolio.linked)) {
       results.push({ userId: user.id, skipped: true, reason: "paper account not linked" });
       continue;
     }
 
-    const portfolio = await brokerageService.getPortfolio(user.id);
+    const portfolio = await brokerageService.getPortfolio(user.id, user.portfolioPreset);
     if (!portfolio) {
       results.push({ userId: user.id, skipped: true, reason: "portfolio unavailable" });
       continue;

@@ -4,8 +4,9 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { type AppMode, getMode, resetEducationTutorial, setMode } from "../lib/appMode";
+import { getPortfolioPreset, onPortfolioPresetChange, setPortfolioPreset } from "../lib/portfolioPreset";
 import { type BackgroundEffect, getBackgroundEffect, setBackgroundEffect } from "../lib/backgroundTheme";
-import { getCurrentLevel, getLevelProgress, type Portfolio } from "@stock/shared";
+import { PORTFOLIO_PRESETS, getCurrentLevel, getLevelProgress, type Portfolio, type PortfolioPresetId } from "@stock/shared";
 import { apiFetch } from "../lib/api";
 
 interface NavbarProps {
@@ -36,12 +37,14 @@ export function Navbar({ onChatClick, experiencePoints }: NavbarProps) {
   const [localXp, setLocalXp] = useState<number | null>(null);
   const [bgEffect, setBgEffect] = useState<BackgroundEffect>("solid");
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [portfolioPreset, setCurrentPortfolioPreset] = useState<PortfolioPresetId>("standard");
 
   useEffect(() => {
     const storedMode = getMode();
     if (storedMode) {
       setCurrentMode(storedMode);
     }
+    setCurrentPortfolioPreset(getPortfolioPreset());
     setBgEffect(getBackgroundEffect());
     // Restore dark mode from localStorage
     const storedDark = localStorage.getItem("trillium_dark_mode");
@@ -52,8 +55,14 @@ export function Navbar({ onChatClick, experiencePoints }: NavbarProps) {
   }, []);
 
   useEffect(() => {
+    return onPortfolioPresetChange((nextPreset) => {
+      setCurrentPortfolioPreset(nextPreset);
+    });
+  }, []);
+
+  useEffect(() => {
     if (experiencePoints === undefined) {
-      apiFetch<Portfolio>("/paper/portfolio")
+      apiFetch<Portfolio>(`/paper/portfolio?preset=${getPortfolioPreset()}`)
         .then(p => setLocalXp(p.experiencePoints || 0))
         .catch(() => {});
     }
@@ -68,6 +77,19 @@ export function Navbar({ onChatClick, experiencePoints }: NavbarProps) {
     setCurrentMode(nextMode);
     if (nextMode === "educational") {
       resetEducationTutorial();
+    }
+  }
+
+  async function handlePortfolioPresetChange(nextPreset: PortfolioPresetId) {
+    try {
+      await apiFetch("/auth/portfolio-preset", {
+        method: "POST",
+        body: JSON.stringify({ preset: nextPreset })
+      });
+      setPortfolioPreset(nextPreset);
+      setCurrentPortfolioPreset(nextPreset);
+    } catch (error) {
+      console.error("Failed to persist portfolio preset:", error);
     }
   }
 
@@ -249,6 +271,27 @@ export function Navbar({ onChatClick, experiencePoints }: NavbarProps) {
                 </>
               )}
             </button>
+
+            <div className="flex items-center gap-1 rounded-xl border border-slate-200 dark:border-slate-600 bg-slate-50 dark:bg-slate-700 p-1">
+              {PORTFOLIO_PRESETS.map((preset) => {
+                const active = portfolioPreset === preset.id;
+                return (
+                  <button
+                    key={preset.id}
+                    onClick={() => handlePortfolioPresetChange(preset.id)}
+                    className={`rounded-lg px-3 py-2 text-xs font-black uppercase tracking-[0.18em] transition ${
+                      active
+                        ? "bg-white dark:bg-slate-600 text-blue-600 dark:text-blue-300 shadow-sm"
+                        : "text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200"
+                    }`}
+                    title={`Switch to ${preset.name}`}
+                  >
+                    <span className="hidden sm:inline">{preset.name}</span>
+                    <span className="sm:hidden">{preset.name.slice(0, 1)}</span>
+                  </button>
+                );
+              })}
+            </div>
 
             <button 
               onClick={() => {

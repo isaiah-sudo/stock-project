@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useMemo } from "react";
 import { apiFetch } from "../lib/api";
+import { getPortfolioPreset } from "../lib/portfolioPreset";
 
 interface StockMetadata {
   symbol: string;
@@ -61,7 +62,7 @@ export function PaperTradingPanel({ onTradeCompleted, buyingPower }: { onTradeCo
         "/paper/order",
         {
           method: "POST",
-          body: JSON.stringify({ symbol, side, quantity })
+          body: JSON.stringify({ symbol, side, quantity, preset: getPortfolioPreset() })
         }
       );
       setStatus(

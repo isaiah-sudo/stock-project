@@ -7,12 +7,14 @@ const router = Router();
 const brokerageService = new BrokerageService();
 
 router.get("/", requireAuth, async (req: AuthRequest, res) => {
-  const portfolio = await brokerageService.getPortfolio(req.user!.userId);
+  const preset = typeof req.query.preset === "string" ? req.query.preset : undefined;
+  const portfolio = await brokerageService.getPortfolio(req.user!.userId, preset);
   return res.json(portfolio);
 });
 
 router.get("/transactions", requireAuth, async (req: AuthRequest, res) => {
-  const transactions = await brokerageService.getTransactions(req.user!.userId);
+  const preset = typeof req.query.preset === "string" ? req.query.preset : undefined;
+  const transactions = await brokerageService.getTransactions(req.user!.userId, preset);
   return res.json(transactions);
 });
 
