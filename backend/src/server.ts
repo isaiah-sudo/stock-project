@@ -14,6 +14,12 @@ import cronRoutes from "./routes/cron.js";
 const app = express();
 const port = Number(process.env.PORT ?? 4000);
 const host = process.env.BACKEND_HOST?.trim() || "0.0.0.0";
+const allowedHostnames = new Set([
+  "localhost",
+  "127.0.0.1",
+  "trilliumfinance.fly.dev",
+  "trilliumfinance.net"
+]);
 
 const allowedOrigins = new Set(
   [
@@ -28,6 +34,33 @@ const allowedOrigins = new Set(
     .filter(Boolean)
 );
 
+function isAllowedOrigin(origin: string): boolean {
+  if (allowedOrigins.has(origin)) {
+    return true;
+  }
+
+  try {
+    const parsed = new URL(origin);
+    const hostname = parsed.hostname;
+
+    if (allowedHostnames.has(hostname)) {
+      return true;
+    }
+
+    if (/^(?:\d{1,3}\.){3}\d{1,3}$/.test(hostname)) {
+      return true;
+    }
+
+    if (hostname.endsWith(".trilliumfinance.fly.dev") || hostname.endsWith(".trilliumfinance.net")) {
+      return true;
+    }
+
+    return allowedOrigins.has(`${parsed.protocol}//${parsed.host}`);
+  } catch {
+    return false;
+  }
+}
+
 // Required for express-rate-limit to work behind Fly and other proxies.
 app.set("trust proxy", 1);
 
@@ -37,20 +70,7 @@ app.use(
     origin: (origin, callback) => {
       if (!origin) return callback(null, true);
 
-      if (allowedOrigins.has(origin)) {
-        return callback(null, true);
-      }
-
-      try {
-        const parsed = new URL(origin);
-        if (allowedOrigins.has(`${parsed.protocol}//${parsed.host}`)) {
-          return callback(null, true);
-        }
-      } catch {
-        // ignore malformed origins
-      }
-
-      if (/^https?:\/\/\d+\.\d+\.\d+\.\d+:3000$/.test(origin)) {
+      if (isAllowedOrigin(origin)) {
         return callback(null, true);
       }
 

@@ -30,11 +30,11 @@ release_command = "npm --workspace backend exec -- prisma migrate deploy --schem
     soft_limit = 20
 
   [[http_service.checks]]
+    grace_period = "30s"
     interval = '15s'
     timeout = '5s'
-    grace_period = '1m0s'
     method = 'GET'
-    path = '/api/health'
+    path = '/health'
 
 [[vm]]
   memory = '1gb'

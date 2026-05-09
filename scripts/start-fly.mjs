@@ -25,6 +25,29 @@ function start(name, command, args, extraEnv = {}) {
   return child;
 }
 
+function delay(ms) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+async function waitForHttp(url, label, timeoutMs = 60_000) {
+  const deadline = Date.now() + timeoutMs;
+
+  while (Date.now() < deadline) {
+    try {
+      const response = await fetch(url);
+      if (response.ok) {
+        return;
+      }
+    } catch {
+      // keep waiting
+    }
+
+    await delay(1000);
+  }
+
+  throw new Error(`Timed out waiting for ${label} at ${url}`);
+}
+
 function shutdown(exitCode = 0) {
   if (shuttingDown) {
     return;
@@ -59,6 +82,8 @@ start("quote-service", "python3", [
   "8001"
 ]);
 
+await waitForHttp("http://127.0.0.1:8001/health", "quote service");
+
 start("backend", "node", [
   "backend/dist/server.js"
 ], {
@@ -66,6 +91,8 @@ start("backend", "node", [
   BACKEND_HOST: "127.0.0.1",
   STOCK_QUOTE_SERVICE_URL: "http://127.0.0.1:8001"
 });
+
+await waitForHttp("http://127.0.0.1:4000/api/health", "backend");
 
 start("frontend", "npm", [
   "--workspace",
