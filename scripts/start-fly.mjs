@@ -78,9 +78,8 @@ start("frontend", "npm", [
   "--hostname",
   "0.0.0.0",
   "--port",
-  "3000"
+  "8080"
 ], {
   NODE_ENV: "production",
   BACKEND_INTERNAL_URL: "http://127.0.0.1:4000"
 });
-
