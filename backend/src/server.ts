@@ -95,8 +95,16 @@ app.use("/api/paper", paperRoutes);
 app.use("/api/leaderboard", leaderboardRoutes);
 app.use("/api/cron", cronRoutes);
 
-// Only start the server locally if not running as a Cloud Function
-if (process.env.NODE_ENV !== "production" && !process.env.FUNCTIONS_EMULATOR) {
+const isFunctionsRuntime = Boolean(
+  process.env.FUNCTION_TARGET ||
+  process.env.FUNCTION_NAME ||
+  process.env.K_SERVICE ||
+  process.env.FUNCTIONS_EMULATOR
+);
+
+// Start the HTTP server for local dev and container deployments, but leave
+// Firebase Functions runtime to own the request handler export.
+if (!isFunctionsRuntime) {
   app.listen(port, "0.0.0.0", () => {
     const lanIp = getLanIp();
     // eslint-disable-next-line no-console

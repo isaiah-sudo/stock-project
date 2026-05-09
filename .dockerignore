@@ -1,0 +1,17 @@
+node_modules
+.next
+.git
+.gitignore
+backend/node_modules
+backend/dist
+backend/.env
+backend/.env.*
+frontend/node_modules
+frontend/.next
+frontend/.env.local
+frontend/.env.*
+shared/node_modules
+python-quote-service/__pycache__
+python-quote-service/.venv
+*.log
+*.tmp

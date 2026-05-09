@@ -53,6 +53,12 @@ Production-ready starter for a beginner paper trading stock game app:
 - For Vercel, point `NEXT_PUBLIC_API_BASE_URL` at the deployed backend URL and keep the backend on Fly or another Node host.
 - Email verification and bi-weekly digests are wired through Resend when `RESEND_API_KEY` and `RESEND_FROM_EMAIL` are present.
 
+## Fly.io
+- The repo now includes a root `Dockerfile` and `fly.toml` so the app can run as one Fly service.
+- The Next.js frontend proxies `/api/*` to the backend on `127.0.0.1:4000`, so the browser can stay on the same origin.
+- The backend listens in container deployments and the Python quote service runs inside the same machine on port `8001`.
+- Before deploying, set the Fly secrets for at least `DATABASE_URL`, `FRONTEND_URL`, `PUBLIC_APP_URL`, `APP_BASE_URL`, `CRON_SECRET`, and any email or AI provider keys you use.
+
 ## Notes
 - Some stocks are included in the paper trade but to add more you need to add them to the `python-quote-service/stocks.txt` file.
 - AI responses include safety guardrails to avoid personalized financial advice.
