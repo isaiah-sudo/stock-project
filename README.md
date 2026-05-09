@@ -57,7 +57,14 @@ Production-ready starter for a beginner paper trading stock game app:
 - The repo now includes a root `Dockerfile` and `fly.toml` so the app can run as one Fly service.
 - The Next.js frontend proxies `/api/*` to the backend on `127.0.0.1:4000`, so the browser can stay on the same origin.
 - The backend listens in container deployments and the Python quote service runs inside the same machine on port `8001`.
-- Before deploying, set the Fly secrets for at least `DATABASE_URL`, `FRONTEND_URL`, `PUBLIC_APP_URL`, `APP_BASE_URL`, `CRON_SECRET`, and any email or AI provider keys you use.
+- Before deploying, set the Fly secrets for at least `DATABASE_URL`, `CRON_SECRET`, `JWT_SECRET`, `RESEND_API_KEY`, `RESEND_FROM_EMAIL`, and any AI provider keys you use.
+- The public URLs are already set in `fly.toml` to `https://trilliumfinance.fly.dev` for `FRONTEND_URL`, `PUBLIC_APP_URL`, and `APP_BASE_URL`.
+- The app already sends verification emails after signup in `backend/src/routes/auth.ts`.
+- The weekly digest cron lives in `backend/src/routes/cron.ts` and requires `CRON_SECRET` to be set as a Fly secret.
+- The email helper in `backend/src/services/emailService.ts` uses Resend when `RESEND_API_KEY` and `RESEND_FROM_EMAIL` are present, and safely skips delivery when they are missing.
+- If you want to wire Fly secrets in one shot, use a command like:
+  - `fly secrets set DATABASE_URL=... CRON_SECRET=... JWT_SECRET=... RESEND_API_KEY=... RESEND_FROM_EMAIL=... -a trilliumfinance`
+- Because you pasted an API key in chat, rotate it in Resend before using it in production.
 
 ## Notes
 - Some stocks are included in the paper trade but to add more you need to add them to the `python-quote-service/stocks.txt` file.

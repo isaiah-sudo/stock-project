@@ -4,8 +4,13 @@ primary_region = "lax"
 [build]
   dockerfile = "Dockerfile"
 
+release_command = "npm --workspace backend exec -- prisma migrate deploy --schema backend/prisma/schema.prisma"
+
 [env]
   NODE_ENV = "production"
+  FRONTEND_URL = "https://trilliumfinance.fly.dev"
+  PUBLIC_APP_URL = "https://trilliumfinance.fly.dev"
+  APP_BASE_URL = "https://trilliumfinance.fly.dev"
   BACKEND_INTERNAL_URL = "http://127.0.0.1:4000"
   STOCK_QUOTE_SERVICE_URL = "http://127.0.0.1:8001"
 
