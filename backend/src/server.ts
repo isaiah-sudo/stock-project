@@ -1,6 +1,4 @@
 import "dotenv/config";
-import { onRequest } from "firebase-functions/v2/https";
-import os from "os";
 import cors from "cors";
 import express from "express";
 import helmet from "helmet";
@@ -13,22 +11,10 @@ import paperRoutes from "./routes/paper.js";
 import leaderboardRoutes from "./routes/leaderboard.js";
 import cronRoutes from "./routes/cron.js";
 
-function getLanIp(): string | null {
-  const interfaces = os.networkInterfaces();
-  for (const name of Object.keys(interfaces)) {
-    const iface = interfaces[name];
-    if (!iface) continue;
-    for (const addr of iface) {
-      if (addr.family === "IPv4" && !addr.internal && (addr.address.startsWith("192.168.") || addr.address.startsWith("10.") || addr.address.startsWith("172."))) {
-        return addr.address;
-      }
-    }
-  }
-  return null;
-}
-
 const app = express();
 const port = Number(process.env.PORT ?? 4000);
+const host = process.env.BACKEND_HOST?.trim() || "0.0.0.0";
+
 const allowedOrigins = new Set(
   [
     process.env.FRONTEND_URL,
@@ -42,14 +28,13 @@ const allowedOrigins = new Set(
     .filter(Boolean)
 );
 
-// Required for express-rate-limit to work behind Cloudflare or Firebase
+// Required for express-rate-limit to work behind Fly and other proxies.
 app.set("trust proxy", 1);
 
 app.use(helmet());
 app.use(
   cors({
     origin: (origin, callback) => {
-      // Allow requests with no origin (like mobile apps or curl requests)
       if (!origin) return callback(null, true);
 
       if (allowedOrigins.has(origin)) {
@@ -65,7 +50,6 @@ app.use(
         // ignore malformed origins
       }
 
-      // Allow any IP on port 3000 (for LAN access)
       if (/^https?:\/\/\d+\.\d+\.\d+\.\d+:3000$/.test(origin)) {
         return callback(null, true);
       }
@@ -95,32 +79,11 @@ app.use("/api/paper", paperRoutes);
 app.use("/api/leaderboard", leaderboardRoutes);
 app.use("/api/cron", cronRoutes);
 
-const isFunctionsRuntime = Boolean(
-  process.env.FUNCTION_TARGET ||
-  process.env.FUNCTION_NAME ||
-  process.env.K_SERVICE ||
-  process.env.FUNCTIONS_EMULATOR
-);
-
-// Start the HTTP server for local dev and container deployments, but leave
-// Firebase Functions runtime to own the request handler export.
-if (!isFunctionsRuntime) {
-  app.listen(port, "0.0.0.0", () => {
-    const lanIp = getLanIp();
-    // eslint-disable-next-line no-console
-    console.log(`\n🚀 Backend ready at:`);
-    // eslint-disable-next-line no-console
-    console.log(`   Local:   http://localhost:${port}`);
-    if (lanIp) {
-      // eslint-disable-next-line no-console
-      console.log(`   Network: http://${lanIp}:${port}`);
-    }
-    // eslint-disable-next-line no-console
-    console.log(`\n📡 API endpoints available at /api/*`);
-  });
-}
+app.listen(port, host, () => {
+  // eslint-disable-next-line no-console
+  console.log(`Backend ready at http://${host}:${port}`);
+  // eslint-disable-next-line no-console
+  console.log("API endpoints available at /api/*");
+});
 
 export { app };
-
-// Export the Firebase Function
-export const api = onRequest({ cors: true, maxInstances: 10 }, app);

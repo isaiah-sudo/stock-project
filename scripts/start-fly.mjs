@@ -63,6 +63,7 @@ start("backend", "node", [
   "backend/dist/server.js"
 ], {
   NODE_ENV: "production",
+  BACKEND_HOST: "127.0.0.1",
   STOCK_QUOTE_SERVICE_URL: "http://127.0.0.1:8001"
 });
 
