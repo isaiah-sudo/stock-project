@@ -6,14 +6,8 @@ primary_region = "lax"
 
 [env]
   NODE_ENV = "production"
-
-  # If backend + quote service run in the SAME machine:
-  BACKEND_INTERNAL_URL = "http://0.0.0.0:4000"
-  STOCK_QUOTE_SERVICE_URL = "http://0.0.0.0:8001"
-
-  # If they are SEPARATE Fly apps, replace with:
-  # BACKEND_INTERNAL_URL = "https://backend-app-name.fly.dev"
-  # STOCK_QUOTE_SERVICE_URL = "https://quote-service-app-name.fly.dev"
+  BACKEND_INTERNAL_URL = "http://127.0.0.1:4000"
+  STOCK_QUOTE_SERVICE_URL = "http://127.0.0.1:8001"
 
 [http_service]
   internal_port = 3000
@@ -31,5 +25,5 @@ primary_region = "lax"
     grace_period = "60s"
     interval = "15s"
     method = "GET"
-    path = "/"          # FIXED: must be a real route your app serves
+    path = "/api/health"
     timeout = "5s"
