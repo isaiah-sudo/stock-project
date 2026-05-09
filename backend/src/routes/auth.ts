@@ -5,7 +5,7 @@ import { z } from "zod";
 import { prisma } from "../lib/prisma.js";
 import { requireAuth } from "../middleware/auth.js";
 import type { AuthRequest } from "../types.js";
-import { getPortfolioPreset } from "@stock/shared";
+import * as shared from "@stock/shared";
 import { buildStarterPortfolio } from "../services/portfolioSeed.js";
 import { createVerificationToken, sendVerificationEmail } from "../services/emailService.js";
 import { paperTradingService } from "../services/paperTradingService.js";
@@ -27,7 +27,7 @@ router.post("/signup", async (req, res) => {
   }
 
   const { email, password, portfolioPreset } = parsed.data;
-  const preset = getPortfolioPreset(portfolioPreset);
+  const preset = shared.getPortfolioPreset(portfolioPreset);
 
   try {
     const existing = await prisma.user.findUnique({ where: { email } });

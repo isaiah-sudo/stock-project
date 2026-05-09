@@ -1,5 +1,5 @@
+import * as shared from "@stock/shared";
 import type { PortfolioPreset } from "@stock/shared";
-import { getPortfolioPreset } from "@stock/shared";
 
 type Quote = {
   symbol: string;
@@ -25,7 +25,7 @@ export async function buildStarterPortfolio(
   presetId: string | null | undefined,
   getQuote: (symbol: string) => Promise<Quote | null>
 ): Promise<StarterPortfolioSeed> {
-  const preset = getPortfolioPreset(presetId);
+  const preset = shared.getPortfolioPreset(presetId);
   const totalBalance = 10_000;
   const investableBalance = totalBalance * (1 - preset.cashBufferPct);
 
@@ -87,4 +87,3 @@ export async function buildStarterPortfolio(
     totalInvested: Number(totalInvested.toFixed(2))
   };
 }
-
