@@ -61,10 +61,17 @@ Production-ready starter for a beginner paper trading stock game app:
 - The service-specific `fly.toml` files are the deployment configs to use
 - The Dockerfiles expect the monorepo root as the build context so the shared workspace stays available
 - A safe deployment pattern is to run Fly commands from the repo root and point at the service config, for example `fly deploy -c frontend/fly.toml`
+- Exact deploy commands:
+  - `fly deploy -c frontend/fly.toml`
+  - `fly deploy -c backend/fly.toml`
+  - `fly deploy -c python-quote-service/fly.toml`
 - Before deploying, set secrets for `DATABASE_URL`, `CRON_SECRET`, `JWT_SECRET`, `RESEND_API_KEY`, `RESEND_FROM_EMAIL`, and any AI provider keys you use
 - Email verification and bi-weekly digests are wired through Resend when the email secrets are present
 - The weekly digest cron lives in `backend/src/routes/cron.ts` and requires `CRON_SECRET`
 - The frontend health route checks the backend with a short timeout so you can spot backend outages quickly
+- The frontend standalone image serves from `/app/frontend/server.js`, which matches the current Dockerfile layout
+- The backend image installs the SSL libraries Prisma expects and the Prisma schema includes both Debian OpenSSL targets so deploys work on Fly's Bookworm base image
+- If the backend still fails after the SSL fix, make sure `DATABASE_URL` is set as a Fly secret for `trillium-backend`
 
 ## Notes
 - The supported quote symbols live in `python-quote-service/quote_service.py`

@@ -4,11 +4,11 @@ WORKDIR /app
 
 ENV PYTHONUNBUFFERED=1
 
-COPY requirements.txt ./requirements.txt
+COPY python-quote-service/requirements.txt ./requirements.txt
 RUN pip install --no-cache-dir --upgrade pip \
   && pip install --no-cache-dir -r requirements.txt
 
-COPY quote_service.py ./quote_service.py
+COPY python-quote-service/quote_service.py ./quote_service.py
 
 EXPOSE 8001
 

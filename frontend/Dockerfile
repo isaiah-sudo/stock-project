@@ -19,17 +19,17 @@ RUN npm run build --workspace shared \
 
 FROM node:20-bookworm-slim AS runner
 
-WORKDIR /app/frontend
+WORKDIR /app
 
 ENV NODE_ENV=production \
     NEXT_TELEMETRY_DISABLED=1 \
     PORT=8080 \
     HOSTNAME=0.0.0.0
 
-COPY --from=builder /app/frontend/.next/standalone ./
-COPY --from=builder /app/frontend/.next/static ./.next/static
-COPY --from=builder /app/frontend/public ./public
+COPY --from=builder /app/frontend/.next/standalone ./frontend
+COPY --from=builder /app/frontend/.next/static ./frontend/.next/static
+COPY --from=builder /app/frontend/public ./frontend/public
 
 EXPOSE 8080
 
-CMD ["node", "server.js"]
+CMD ["node", "frontend/server.js"]

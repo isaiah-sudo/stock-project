@@ -4,6 +4,10 @@ WORKDIR /app
 
 ENV NEXT_TELEMETRY_DISABLED=1
 
+RUN apt-get update \
+  && apt-get install -y --no-install-recommends openssl libssl-dev \
+  && rm -rf /var/lib/apt/lists/*
+
 COPY package.json package-lock.json ./
 COPY frontend/package.json frontend/package.json
 COPY backend/package.json backend/package.json
@@ -23,6 +27,10 @@ WORKDIR /app
 ENV NODE_ENV=production \
     PORT=4000 \
     BACKEND_HOST=0.0.0.0
+
+RUN apt-get update \
+  && apt-get install -y --no-install-recommends openssl libssl3 \
+  && rm -rf /var/lib/apt/lists/*
 
 COPY --from=builder /app/node_modules ./node_modules
 COPY --from=builder /app/backend ./backend
