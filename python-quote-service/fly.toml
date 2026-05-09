@@ -3,6 +3,8 @@ primary_region = "lax"
 
 [build]
   dockerfile = "Dockerfile"
+  ignorefile = ".dockerignore"
+  context = "python-quote-service"
 
 [env]
   PORT = "8001"
