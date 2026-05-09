@@ -42,40 +42,43 @@ export default function DashboardPage() {
   const [achievements, setAchievements] = useState<Achievement[]>([]);
   const [bgEffect, setBgEffect] = useState<BackgroundEffect>("solid");
   const [selectedPreset, setSelectedPreset] = useState<PortfolioPresetId>("standard");
-  const hasCountedUp = useRef(false);
   const [displayNetWorth, setDisplayNetWorth] = useState(0);
   const [displayDayPerf, setDisplayDayPerf] = useState(0);
 
   const initialBalance = 10000;
+  const holdingsValue = portfolio?.holdings.reduce((sum, holding) => sum + holding.quantity * holding.currentPrice, 0) ?? 0;
+  const currentNetWorth = (portfolio?.cashBalance ?? 0) + holdingsValue;
   const holdingsCount = portfolio?.holdings.length ?? 0;
-  const totalPerformanceDollar = portfolio ? portfolio.totalValue - initialBalance : 0;
+  const totalPerformanceDollar = portfolio ? currentNetWorth - initialBalance : 0;
   const dayPerformanceDollar = portfolio?.dayChangeDollar ?? 0;
 
-  // Count-up animation on first portfolio load
+  // Count-up animation whenever portfolio data changes
   useEffect(() => {
-    if (!portfolio || hasCountedUp.current) return;
-    hasCountedUp.current = true;
-    const targetNetWorth = portfolio.totalValue;
+    if (!portfolio) return;
+    const targetNetWorth = currentNetWorth;
     const targetDayPerf = portfolio.dayChangeDollar ?? 0;
     const duration = 1200; // ms
     const steps = 60;
     const interval = duration / steps;
     let step = 0;
+    const startingNetWorth = displayNetWorth;
+    const startingDayPerf = displayDayPerf;
+
     const timer = setInterval(() => {
       step++;
       const progress = Math.min(step / steps, 1);
-      // Ease-out cubic
       const eased = 1 - Math.pow(1 - progress, 3);
-      setDisplayNetWorth(eased * targetNetWorth);
-      setDisplayDayPerf(eased * targetDayPerf);
+      setDisplayNetWorth(startingNetWorth + (targetNetWorth - startingNetWorth) * eased);
+      setDisplayDayPerf(startingDayPerf + (targetDayPerf - startingDayPerf) * eased);
       if (step >= steps) {
         clearInterval(timer);
         setDisplayNetWorth(targetNetWorth);
         setDisplayDayPerf(targetDayPerf);
       }
     }, interval);
+
     return () => clearInterval(timer);
-  }, [portfolio]);
+  }, [portfolio, currentNetWorth]);
 
   // Memoize bubble data so positions are stable across re-renders (prevents disappear/reappear)
   const bubbleData = useMemo(() =>
