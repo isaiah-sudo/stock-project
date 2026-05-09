@@ -398,7 +398,7 @@ class PaperTradingService {
     if (!account?.linked) {
       return { ok: false as const, error: "Paper account is not linked." };
     }
-    const portfolioRecordId = modernUser ? (account as { id: string }).id : userId;
+    const portfolioRecordId = modernUser ? (account as { id: string }).id : args.userId;
 
     const quantity = Math.floor(args.quantity);
     if (quantity <= 0) {
