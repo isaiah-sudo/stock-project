@@ -55,6 +55,10 @@ function isAllowedOrigin(origin: string): boolean {
       return true;
     }
 
+    if (hostname.endsWith(".internal")) {
+      return true;
+    }
+
     return allowedOrigins.has(`${parsed.protocol}//${parsed.host}`);
   } catch {
     return false;

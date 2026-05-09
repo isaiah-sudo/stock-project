@@ -3,12 +3,68 @@ import { spawn } from "node:child_process";
 const children = [];
 let shuttingDown = false;
 
-function start(name, command, args, extraEnv = {}) {
-  const child = spawn(command, args, {
+const services = [
+  {
+    name: "quote-service",
+    command: "python3",
+    args: [
+      "-m",
+      "uvicorn",
+      "quote_service:app",
+      "--app-dir",
+      "python-quote-service",
+      "--host",
+      "0.0.0.0",
+      "--port",
+      "8001"
+    ],
+    readyUrl: "http://127.0.0.1:8001/health",
+    readyLabel: "quote service",
+    env: {
+      PYTHONUNBUFFERED: "1"
+    }
+  },
+  {
+    name: "backend",
+    command: "node",
+    args: ["backend/dist/server.js"],
+    readyUrl: "http://127.0.0.1:4000/api/health",
+    readyLabel: "backend",
+    env: {
+      NODE_ENV: "production",
+      BACKEND_HOST: "127.0.0.1",
+      STOCK_QUOTE_SERVICE_URL: "http://127.0.0.1:8001"
+    }
+  },
+  {
+    name: "frontend",
+    command: "npm",
+    args: [
+      "--workspace",
+      "frontend",
+      "run",
+      "start",
+      "--",
+      "--hostname",
+      "0.0.0.0",
+      "--port",
+      "8080"
+    ],
+    readyUrl: "http://127.0.0.1:8080/",
+    readyLabel: "frontend",
+    env: {
+      NODE_ENV: "production",
+      BACKEND_INTERNAL_URL: "http://127.0.0.1:4000"
+    }
+  }
+];
+
+function start(service) {
+  const child = spawn(service.command, service.args, {
     stdio: "inherit",
     env: {
       ...process.env,
-      ...extraEnv
+      ...service.env
     }
   });
 
@@ -17,7 +73,7 @@ function start(name, command, args, extraEnv = {}) {
       return;
     }
 
-    console.error(`${name} exited with code ${code ?? "null"} signal ${signal ?? "null"}`);
+    console.error(`${service.name} exited with code ${code ?? "null"} signal ${signal ?? "null"}`);
     shutdown(code ?? (signal ? 1 : 0));
   });
 
@@ -70,41 +126,7 @@ function shutdown(exitCode = 0) {
 process.on("SIGINT", () => shutdown(0));
 process.on("SIGTERM", () => shutdown(0));
 
-start("quote-service", "python3", [
-  "-m",
-  "uvicorn",
-  "quote_service:app",
-  "--app-dir",
-  "python-quote-service",
-  "--host",
-  "0.0.0.0",
-  "--port",
-  "8001"
-]);
-
-await waitForHttp("http://127.0.0.1:8001/health", "quote service");
-
-start("backend", "node", [
-  "backend/dist/server.js"
-], {
-  NODE_ENV: "production",
-  BACKEND_HOST: "127.0.0.1",
-  STOCK_QUOTE_SERVICE_URL: "http://127.0.0.1:8001"
-});
-
-await waitForHttp("http://127.0.0.1:4000/api/health", "backend");
-
-start("frontend", "npm", [
-  "--workspace",
-  "frontend",
-  "run",
-  "start",
-  "--",
-  "--hostname",
-  "0.0.0.0",
-  "--port",
-  "8080"
-], {
-  NODE_ENV: "production",
-  BACKEND_INTERNAL_URL: "http://127.0.0.1:4000"
-});
+for (const service of services) {
+  start(service);
+  await waitForHttp(service.readyUrl, service.readyLabel);
+}

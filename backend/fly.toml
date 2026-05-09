@@ -1,0 +1,35 @@
+app = "trillium-backend"
+primary_region = "lax"
+
+[build]
+  dockerfile = "Dockerfile"
+
+release_command = "/app/node_modules/.bin/prisma migrate deploy --schema /app/backend/prisma/schema.prisma"
+
+[env]
+  NODE_ENV = "production"
+  BACKEND_HOST = "0.0.0.0"
+  STOCK_QUOTE_SERVICE_URL = "http://trillium-quotes.internal:8001"
+  FRONTEND_URL = "https://trilliumfinance.fly.dev"
+  PUBLIC_APP_URL = "https://trilliumfinance.fly.dev"
+  APP_BASE_URL = "https://trilliumfinance.fly.dev"
+  CORS_ORIGINS = "https://trilliumfinance.fly.dev"
+
+[http_service]
+  internal_port = 4000
+  force_https = true
+  auto_stop_machines = false
+  auto_start_machines = true
+  min_machines_running = 1
+
+  [[http_service.checks]]
+    grace_period = "30s"
+    interval = "15s"
+    timeout = "5s"
+    method = "GET"
+    path = "/api/health"
+
+[[vm]]
+  memory = "512mb"
+  cpu_kind = "shared"
+  cpus = 1
