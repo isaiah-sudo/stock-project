@@ -59,11 +59,8 @@ start("quote-service", "python3", [
   "8001"
 ]);
 
-start("backend", "npm", [
-  "--workspace",
-  "backend",
-  "run",
-  "start"
+start("backend", "node", [
+  "backend/dist/server.js"
 ], {
   NODE_ENV: "production",
   STOCK_QUOTE_SERVICE_URL: "http://127.0.0.1:8001"
