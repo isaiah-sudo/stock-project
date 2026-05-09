@@ -1,6 +1,7 @@
 import { Router } from "express";
 import { z } from "zod";
 import { requireAuth } from "../middleware/auth.js";
+import { prisma } from "../lib/prisma.js";
 import { BrokerageService } from "../services/brokerageService.js";
 import { queryOllama } from "../services/ollamaService.js";
 import type { AuthRequest } from "../types.js";
@@ -21,7 +22,11 @@ router.post("/", requireAuth, async (req: AuthRequest, res) => {
   }
 
   const model = parsed.data.model ?? process.env.OLLAMA_DEFAULT_MODEL ?? "llama3";
-  const portfolio = await brokerageService.getPortfolio(req.user!.userId);
+  const user = await prisma.user.findUnique({
+    where: { id: req.user!.userId },
+    select: { portfolioPreset: true }
+  });
+  const portfolio = await brokerageService.getPortfolio(req.user!.userId, user?.portfolioPreset);
   const aiResult = await queryOllama({
     model,
     userMessage: parsed.data.message,

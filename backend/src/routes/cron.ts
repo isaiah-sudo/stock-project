@@ -39,13 +39,17 @@ router.post("/portfolio-updates", async (req, res) => {
       email: true,
       portfolioPreset: true,
       lastPortfolioDigestSentAt: true,
+      paperAccount: { select: { linked: true } },
       paperPortfolios: { select: { linked: true } }
     }
   });
 
   const results = [];
   for (const user of users) {
-    if (!user.paperPortfolios?.some((portfolio) => portfolio.linked)) {
+    const hasPaperAccess =
+      Boolean(user.paperAccount?.linked) ||
+      Boolean(user.paperPortfolios?.some((portfolio) => portfolio.linked));
+    if (!hasPaperAccess) {
       results.push({ userId: user.id, skipped: true, reason: "paper account not linked" });
       continue;
     }

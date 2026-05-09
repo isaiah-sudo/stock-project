@@ -205,11 +205,15 @@ router.get("/me", requireAuth, async (req: AuthRequest, res) => {
         createdAt: true,
         portfolioPreset: true,
         emailVerifiedAt: true,
-        lastPortfolioDigestSentAt: true
+        lastPortfolioDigestSentAt: true,
+        paperPortfolios: { select: { id: true } }
       }
     });
     if (!user) return res.status(404).json({ error: "User not found" });
-    return res.json(user);
+    return res.json({
+      ...user,
+      hasModernPortfolios: user.paperPortfolios.length > 0
+    });
   } catch (err) {
     return res.status(500).json({ error: "Couldn't fetch user info." });
   }

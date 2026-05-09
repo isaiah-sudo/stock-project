@@ -128,6 +128,11 @@ class PaperTradingService {
     return getPortfolioPreset(preset).id;
   }
 
+  private async isModernUser(userId: string) {
+    const count = await prisma.paperPortfolio.count({ where: { userId } });
+    return count > 0;
+  }
+
   private async getUserPreset(userId: string) {
     const user = await prisma.user.findUnique({
       where: { id: userId },
@@ -136,9 +141,16 @@ class PaperTradingService {
     return this.normalizePreset(user?.portfolioPreset);
   }
 
-  private async getPortfolioRecord(userId: string, preset?: string | null) {
+  private async getLegacyAccount(userId: string) {
+    return prisma.paperAccount.findUnique({
+      where: { userId },
+      include: { positions: true }
+    });
+  }
+
+  private async getModernPortfolioRecord(userId: string, preset?: string | null) {
     const selectedPreset = this.normalizePreset(preset ?? (await this.getUserPreset(userId)));
-    const account = await prisma.paperPortfolio.findUnique({
+    return prisma.paperPortfolio.findUnique({
       where: {
         userId_preset: {
           userId,
@@ -147,21 +159,6 @@ class PaperTradingService {
       },
       include: { positions: true }
     });
-
-    if (!account) {
-      await this.linkPaperAccount(userId);
-      return prisma.paperPortfolio.findUnique({
-        where: {
-          userId_preset: {
-            userId,
-            preset: selectedPreset
-          }
-        },
-        include: { positions: true }
-      });
-    }
-
-    return account;
   }
 
   private async seedPortfolioRecord(tx: any, userId: string, preset: PortfolioPresetId) {
@@ -231,40 +228,103 @@ class PaperTradingService {
   }
 
   async linkPaperAccount(userId: string, startingCash = 10_000) {
-    const existing = await prisma.paperPortfolio.findMany({
-      where: { userId }
-    });
-    const alreadyLinked = existing.length === PORTFOLIO_PRESETS.length && existing.every((portfolio) => portfolio.linked);
-    if (alreadyLinked) {
+    const modernUser = await this.isModernUser(userId);
+    if (modernUser) {
+      const existing = await prisma.paperPortfolio.findMany({
+        where: { userId }
+      });
+      const alreadyLinked = existing.length === PORTFOLIO_PRESETS.length && existing.every((portfolio) => portfolio.linked);
+      if (alreadyLinked) {
+        const activePreset = await this.getUserPreset(userId);
+        const activePortfolio = existing.find((portfolio) => portfolio.preset === activePreset) ?? existing[0];
+        return { linked: true, alreadyLinked: true, cashBalance: activePortfolio?.cashBalance ?? startingCash };
+      }
+
+      await prisma.$transaction(async (tx: any) => {
+        for (const preset of PORTFOLIO_PRESETS) {
+          await this.seedPortfolioRecord(tx, userId, preset.id);
+        }
+      });
+
       const activePreset = await this.getUserPreset(userId);
-      const activePortfolio = existing.find((portfolio) => portfolio.preset === activePreset) ?? existing[0];
-      return { linked: true, alreadyLinked: true, cashBalance: activePortfolio?.cashBalance ?? startingCash };
+      const activePortfolio = await prisma.paperPortfolio.findUnique({
+        where: {
+          userId_preset: {
+            userId,
+            preset: activePreset
+          }
+        }
+      });
+
+      return { linked: true, alreadyLinked: Boolean(existing.length), cashBalance: activePortfolio?.cashBalance ?? startingCash };
     }
 
-    await prisma.$transaction(async (tx: any) => {
-      for (const preset of PORTFOLIO_PRESETS) {
-        await this.seedPortfolioRecord(tx, userId, preset.id);
+    const existing = await this.getLegacyAccount(userId);
+    if (existing?.linked) {
+      const positionCount = await prisma.paperPosition.count({ where: { userId } });
+      if (positionCount > 0) {
+        return { linked: true, alreadyLinked: true, cashBalance: existing.cashBalance };
+      }
+    }
+
+    const account = await prisma.paperAccount.upsert({
+      where: { userId },
+      update: { linked: true },
+      create: {
+        userId,
+        cashBalance: startingCash,
+        linked: true
       }
     });
 
-    const activePreset = await this.getUserPreset(userId);
-    const activePortfolio = await prisma.paperPortfolio.findUnique({
-      where: {
-        userId_preset: {
-          userId,
-          preset: activePreset
+    const positionCount = await prisma.paperPosition.count({ where: { userId } });
+    let finalCashBalance = account.cashBalance;
+    if (positionCount === 0) {
+      const user = await prisma.user.findUnique({
+        where: { id: userId },
+        select: { portfolioPreset: true }
+      });
+      const starter = await buildStarterPortfolio(user?.portfolioPreset ?? null, (symbol) => this.getQuote(symbol));
+      await prisma.$transaction(async (tx: any) => {
+        const duplicateCount = await tx.paperPosition.count({ where: { userId } });
+        if (duplicateCount > 0) {
+          return;
         }
-      }
-    });
 
-    return { linked: true, alreadyLinked: Boolean(existing.length), cashBalance: activePortfolio?.cashBalance ?? startingCash };
+        for (const position of starter.positions) {
+          await tx.paperPosition.create({
+            data: {
+              userId,
+              symbol: position.symbol,
+              name: position.name,
+              quantity: position.quantity,
+              averageCost: position.averageCost
+            }
+          });
+        }
+
+        await tx.paperAccount.update({
+          where: { userId },
+          data: { cashBalance: starter.cashBalance }
+        });
+      });
+      finalCashBalance = starter.cashBalance;
+    }
+
+    return { linked: true, alreadyLinked: Boolean(existing?.linked), cashBalance: finalCashBalance };
   }
 
   async isLinked(userId: string) {
-    const account = await prisma.paperPortfolio.findFirst({
-      where: { userId, linked: true },
-      select: { linked: true }
-    });
+    const modernUser = await this.isModernUser(userId);
+    const account = modernUser
+      ? await prisma.paperPortfolio.findFirst({
+          where: { userId, linked: true },
+          select: { linked: true }
+        })
+      : await prisma.paperAccount.findUnique({
+          where: { userId },
+          select: { linked: true }
+        });
     return account?.linked === true;
   }
 
@@ -331,10 +391,14 @@ class PaperTradingService {
       return { ok: false as const, error: `Unsupported symbol. Use: ${SUPPORTED_SYMBOLS.join(", ")}` };
     }
 
-    const account = await this.getPortfolioRecord(args.userId, args.preset);
+    const modernUser = await this.isModernUser(args.userId);
+    const account = modernUser
+      ? await this.getModernPortfolioRecord(args.userId, args.preset)
+      : await this.getLegacyAccount(args.userId);
     if (!account?.linked) {
       return { ok: false as const, error: "Paper account is not linked." };
     }
+    const portfolioRecordId = modernUser ? (account as { id: string }).id : userId;
 
     const quantity = Math.floor(args.quantity);
     if (quantity <= 0) {
@@ -359,27 +423,51 @@ class PaperTradingService {
         const newQty = prevQty + quantity;
         const newAvg = Number((((prevQty * prevCost) + notional) / newQty).toFixed(4));
 
-        if (position) {
-          await tx.paperPositionV2.update({
-            where: { id: position.id },
-            data: { quantity: newQty, averageCost: newAvg }
+        if (modernUser) {
+          if (position) {
+            await tx.paperPositionV2.update({
+              where: { id: position.id },
+              data: { quantity: newQty, averageCost: newAvg }
+            });
+          } else {
+            await tx.paperPositionV2.create({
+              data: {
+                portfolioId: portfolioRecordId,
+                symbol: quote.symbol,
+                name: quote.name,
+                quantity: newQty,
+                averageCost: newAvg
+              }
+            });
+          }
+
+          await tx.paperPortfolio.update({
+            where: { id: portfolioRecordId },
+            data: { cashBalance: { decrement: notional } }
           });
         } else {
-          await tx.paperPositionV2.create({
-            data: {
-              portfolioId: account.id,
-              symbol: quote.symbol,
-              name: quote.name,
-              quantity: newQty,
-              averageCost: newAvg
-            }
+          if (position) {
+            await tx.paperPosition.update({
+              where: { id: position.id },
+              data: { quantity: newQty, averageCost: newAvg }
+            });
+          } else {
+            await tx.paperPosition.create({
+              data: {
+                userId: args.userId,
+                symbol: quote.symbol,
+                name: quote.name,
+                quantity: newQty,
+                averageCost: newAvg
+              }
+            });
+          }
+
+          await tx.paperAccount.update({
+            where: { userId: args.userId },
+            data: { cashBalance: { decrement: notional } }
           });
         }
-
-        await tx.paperPortfolio.update({
-          where: { id: account.id },
-          data: { cashBalance: { decrement: notional } }
-        });
       } else {
         const heldQty = position?.quantity ?? 0;
         if (heldQty < quantity) {
@@ -388,20 +476,40 @@ class PaperTradingService {
 
         const remaining = heldQty - quantity;
         if (remaining === 0) {
-          await tx.paperPositionV2.delete({
-            where: { id: position!.id }
-          });
+          if (modernUser) {
+            await tx.paperPositionV2.delete({
+              where: { id: position!.id }
+            });
+          } else {
+            await tx.paperPosition.delete({
+              where: { id: position!.id }
+            });
+          }
         } else {
-          await tx.paperPositionV2.update({
-            where: { id: position!.id },
-            data: { quantity: remaining }
-          });
+          if (modernUser) {
+            await tx.paperPositionV2.update({
+              where: { id: position!.id },
+              data: { quantity: remaining }
+            });
+          } else {
+            await tx.paperPosition.update({
+              where: { id: position!.id },
+              data: { quantity: remaining }
+            });
+          }
         }
 
-        await tx.paperPortfolio.update({
-          where: { id: account.id },
-          data: { cashBalance: { increment: notional } }
-        });
+        if (modernUser) {
+          await tx.paperPortfolio.update({
+            where: { id: portfolioRecordId },
+            data: { cashBalance: { increment: notional } }
+          });
+        } else {
+          await tx.paperAccount.update({
+            where: { userId: args.userId },
+            data: { cashBalance: { increment: notional } }
+          });
+        }
 
         if (position && quote.currentPrice > position.averageCost) {
           await tx.user.update({
@@ -411,19 +519,33 @@ class PaperTradingService {
         }
       }
 
-      const transaction = await tx.paperTransactionV2.create({
-        data: {
-          portfolioId: account.id,
-          symbol: quote.symbol,
-          side: args.side,
-          quantity,
-          price: quote.currentPrice
-        }
-      });
+      const transaction = modernUser
+        ? await tx.paperTransactionV2.create({
+            data: {
+              portfolioId: portfolioRecordId,
+              symbol: quote.symbol,
+              side: args.side,
+              quantity,
+              price: quote.currentPrice
+            }
+          })
+        : await tx.paperTransaction.create({
+            data: {
+              userId: args.userId,
+              symbol: quote.symbol,
+              side: args.side,
+              quantity,
+              price: quote.currentPrice
+            }
+          });
 
-      const updatedAccount = await tx.paperPortfolio.findUnique({
-        where: { id: account.id }
-      });
+      const updatedAccount = modernUser
+        ? await tx.paperPortfolio.findUnique({
+            where: { id: portfolioRecordId }
+          })
+        : await tx.paperAccount.findUnique({
+            where: { userId: args.userId }
+          });
 
       try {
         await tx.achievement.upsert({
@@ -455,7 +577,7 @@ class PaperTradingService {
     });
 
     if (result.ok) {
-      await this.recordPortfolioSnapshot(account.id, { force: true });
+      await this.recordPortfolioSnapshot(portfolioRecordId, { force: true, modern: modernUser });
     }
 
     return result;
@@ -512,7 +634,10 @@ class PaperTradingService {
   }
 
   private async buildLivePortfolioState(userId: string, preset?: string | null) {
-    const account = await this.getPortfolioRecord(userId, preset);
+    const modernUser = await this.isModernUser(userId);
+    const account = modernUser
+      ? await this.getModernPortfolioRecord(userId, preset)
+      : await this.getLegacyAccount(userId);
     if (!account?.linked) {
       return null;
     }
@@ -547,6 +672,7 @@ class PaperTradingService {
 
     return {
       account,
+      modernUser,
       holdings,
       totalValue,
       holdingsValue: Number((totalValue - account.cashBalance).toFixed(2)),
@@ -557,12 +683,17 @@ class PaperTradingService {
 
   private async recordPortfolioSnapshot(
     portfolioId: string,
-    options?: { force?: boolean; totalMarketValue?: number }
+    options?: { force?: boolean; totalMarketValue?: number; modern?: boolean }
   ) {
-    const latestSnapshot = await prisma.portfolioSnapshotV2.findFirst({
-      where: { portfolioId },
-      orderBy: { timestamp: "desc" }
-    });
+    const latestSnapshot = options?.modern
+      ? await prisma.portfolioSnapshotV2.findFirst({
+          where: { portfolioId },
+          orderBy: { timestamp: "desc" }
+        })
+      : await prisma.portfolioSnapshot.findFirst({
+          where: { userId: portfolioId },
+          orderBy: { timestamp: "desc" }
+        });
 
     const now = new Date();
     const marketOpen = this.isMarketOpen();
@@ -585,19 +716,34 @@ class PaperTradingService {
 
     let totalMarketValue = options?.totalMarketValue;
     if (totalMarketValue === undefined) {
-      const account = await prisma.paperPortfolio.findUnique({
-        where: { id: portfolioId },
-        include: { positions: true }
-      });
-      totalMarketValue = account?.linked ? await this.calculateMarketValue(account.positions) : 0;
+      if (options?.modern) {
+        const account = await prisma.paperPortfolio.findUnique({
+          where: { id: portfolioId },
+          include: { positions: true }
+        });
+        totalMarketValue = account?.linked ? await this.calculateMarketValue(account.positions) : 0;
+      } else {
+        const account = await prisma.paperAccount.findUnique({
+          where: { userId: portfolioId },
+          include: { positions: true }
+        });
+        totalMarketValue = account?.linked ? await this.calculateMarketValue(account.positions) : 0;
+      }
     }
 
-    return prisma.portfolioSnapshotV2.create({
-      data: {
-        portfolioId,
-        totalMarketValue: Number(totalMarketValue.toFixed(2))
-      }
-    });
+    return options?.modern
+      ? prisma.portfolioSnapshotV2.create({
+          data: {
+            portfolioId,
+            totalMarketValue: Number(totalMarketValue.toFixed(2))
+          }
+        })
+      : prisma.portfolioSnapshot.create({
+          data: {
+            userId: portfolioId,
+            totalMarketValue: Number(totalMarketValue.toFixed(2))
+          }
+        });
   }
 
   private async getBenchmarkHistory(symbol: BenchmarkSymbol, timeframe: HistoryTimeframe) {
@@ -662,11 +808,15 @@ class PaperTradingService {
     const portfolioState = await this.buildLivePortfolioState(userId, preset);
     if (!portfolioState) return null;
 
-    const { account, holdings, totalValue, holdingsValue, dayChangePct, dayChangeDollar } = portfolioState;
+    const { account, modernUser, holdings, totalValue, holdingsValue, dayChangePct, dayChangeDollar } = portfolioState;
+    const accountId = modernUser ? (account as { id: string }).id : userId;
 
     setImmediate(() => {
-      this.checkPortfolioAchievements(userId, totalValue, account.positions);
-      this.recordPortfolioSnapshot(account.id, { totalMarketValue: holdingsValue }).catch(() => undefined);
+      this.checkPortfolioAchievements(userId, totalValue, account.positions, modernUser);
+      this.recordPortfolioSnapshot(accountId, {
+        totalMarketValue: holdingsValue,
+        modern: modernUser
+      }).catch(() => undefined);
     });
 
     const user = await prisma.user.findUnique({
@@ -675,7 +825,7 @@ class PaperTradingService {
     });
 
     return {
-      accountId: account.id,
+      accountId,
       cashBalance: account.cashBalance,
       totalValue,
       dayChangePct,
@@ -685,7 +835,7 @@ class PaperTradingService {
     };
   }
 
-  private async checkPortfolioAchievements(userId: string, totalValue: number, positions: any[]) {
+  private async checkPortfolioAchievements(userId: string, totalValue: number, positions: any[], modernUser: boolean) {
     try {
       if (totalValue >= 11_000) {
         await this.unlockAchievement(userId, "TEN_PCT_GAIN");
@@ -702,15 +852,20 @@ class PaperTradingService {
         await this.unlockAchievement(userId, "BULL_RUN");
       }
 
-      const portfolioIds = await prisma.paperPortfolio.findMany({
-        where: { userId },
-        select: { id: true }
-      });
-      const transactionCount = portfolioIds.length
-        ? await prisma.paperTransactionV2.count({
-            where: { portfolioId: { in: portfolioIds.map((portfolio) => portfolio.id) } }
-          })
-        : 0;
+      const transactionCount = modernUser
+        ? await prisma.paperPortfolio.findMany({
+            where: { userId },
+            select: { id: true }
+          }).then((portfolios) =>
+            prisma.paperTransactionV2.count({
+              where: {
+                portfolioId: {
+                  in: portfolios.map((portfolio) => portfolio.id)
+                }
+              }
+            })
+          )
+        : await prisma.paperTransaction.count({ where: { userId } });
       if (transactionCount >= 100) {
         await this.unlockAchievement(userId, "CENTURY_TRADER");
       }
@@ -731,15 +886,25 @@ class PaperTradingService {
     }
 
     const { durationMs, bucketMs } = this.getHistoryConfig(timeframe);
-    const snapshots = await prisma.portfolioSnapshotV2.findMany({
-      where: {
-        portfolioId: portfolioState.account.id,
-        timestamp: {
-          gte: new Date(Date.now() - durationMs)
-        }
-      },
-      orderBy: { timestamp: "asc" }
-    });
+    const snapshots = portfolioState.modernUser
+      ? await prisma.portfolioSnapshotV2.findMany({
+          where: {
+            portfolioId: (portfolioState.account as { id: string }).id,
+            timestamp: {
+              gte: new Date(Date.now() - durationMs)
+            }
+          },
+          orderBy: { timestamp: "asc" }
+        })
+      : await prisma.portfolioSnapshot.findMany({
+          where: {
+            userId,
+            timestamp: {
+              gte: new Date(Date.now() - durationMs)
+            }
+          },
+          orderBy: { timestamp: "asc" }
+        });
 
     const snapshotByBucket = new Map<number, PortfolioHistoryPoint>();
     for (const snapshot of snapshots) {
@@ -786,14 +951,24 @@ class PaperTradingService {
   }
 
   async getTransactions(userId: string, preset?: string | null): Promise<Transaction[] | null> {
-    const account = await this.getPortfolioRecord(userId, preset);
+    const modernUser = await this.isModernUser(userId);
+    const account = modernUser
+      ? await this.getModernPortfolioRecord(userId, preset)
+      : await this.getLegacyAccount(userId);
     if (!account?.linked) return null;
+    const accountId = modernUser ? (account as { id: string }).id : userId;
 
-    const transactions = await prisma.paperTransactionV2.findMany({
-      where: { portfolioId: account.id },
-      orderBy: { occurredAt: "desc" },
-      take: 50
-    });
+    const transactions = modernUser
+      ? await prisma.paperTransactionV2.findMany({
+          where: { portfolioId: accountId },
+          orderBy: { occurredAt: "desc" },
+          take: 50
+        })
+      : await prisma.paperTransaction.findMany({
+          where: { userId },
+          orderBy: { occurredAt: "desc" },
+          take: 50
+        });
 
     return transactions.map((t: {
       id: string;
@@ -813,14 +988,25 @@ class PaperTradingService {
   }
 
   async getLeaderboard() {
-    const accounts = await prisma.paperPortfolio.findMany({
+    const modernAccounts = await prisma.paperPortfolio.findMany({
+      where: { linked: true },
       include: {
         user: { select: { email: true, experiencePoints: true, portfolioPreset: true } },
         positions: true
       }
     });
+    const legacyAccounts = await prisma.paperAccount.findMany({
+      where: { linked: true },
+      include: {
+        user: { select: { email: true, experiencePoints: true } },
+        positions: true
+      }
+    });
 
-    const activeAccounts = accounts.filter((account) => account.linked && account.preset === account.user.portfolioPreset);
+    const activeAccounts = [
+      ...modernAccounts.filter((account) => account.preset === account.user.portfolioPreset),
+      ...legacyAccounts
+    ];
 
     const allPositions = activeAccounts.flatMap((acc: {
       positions: Array<{ symbol: string; quantity: number; averageCost: number }>;
@@ -839,7 +1025,7 @@ class PaperTradingService {
       userId: string;
       cashBalance: number;
       positions: Array<{ symbol: string; quantity: number; averageCost: number }>;
-      user: { email: string; experiencePoints: number; portfolioPreset: string };
+      user: { email: string; experiencePoints: number; portfolioPreset?: string };
     }) => {
       let holdingsValue = 0;
       for (const pos of account.positions) {

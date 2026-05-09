@@ -42,6 +42,7 @@ export default function DashboardPage() {
   const [achievements, setAchievements] = useState<Achievement[]>([]);
   const [bgEffect, setBgEffect] = useState<BackgroundEffect>("solid");
   const [selectedPreset, setSelectedPreset] = useState<PortfolioPresetId>("standard");
+  const [hasModernPortfolios, setHasModernPortfolios] = useState(false);
   const [displayNetWorth, setDisplayNetWorth] = useState(0);
   const [displayDayPerf, setDisplayDayPerf] = useState(0);
 
@@ -127,6 +128,14 @@ export default function DashboardPage() {
     setShowTutorial(shouldShowEducationTutorial());
     setIsEducational(getMode() === "educational");
     setBgEffect(getBackgroundEffect());
+    apiFetch<{ hasModernPortfolios?: boolean; portfolioPreset?: PortfolioPresetId }>("/auth/me")
+      .then((user) => {
+        setHasModernPortfolios(Boolean(user.hasModernPortfolios));
+        if (user.portfolioPreset) {
+          setSelectedPreset(user.portfolioPreset);
+        }
+      })
+      .catch(() => {});
     const initialPreset = getPortfolioPreset();
     setSelectedPreset(initialPreset);
     loadPortfolio(initialPreset);
@@ -272,7 +281,9 @@ export default function DashboardPage() {
                 <div className="mb-3 sm:mb-6">
                   <div className="mb-2 text-xs font-black uppercase tracking-[0.3em] text-emerald-500 dark:text-emerald-400 sm:mb-3">Starter overview</div>
                   <div className="mb-3 inline-flex items-center rounded-full border border-slate-200 dark:border-slate-600 bg-slate-50 dark:bg-slate-700 px-3 py-1 text-[11px] font-black uppercase tracking-[0.22em] text-slate-500 dark:text-slate-300">
-                    {PORTFOLIO_PRESETS.find((preset) => preset.id === selectedPreset)?.name ?? "Standard"} mode
+                    {hasModernPortfolios
+                      ? `${PORTFOLIO_PRESETS.find((preset) => preset.id === selectedPreset)?.name ?? "Standard"} mode`
+                      : "Original account"}
                   </div>
                   <div>
                     <p className="text-sm font-semibold text-slate-500 dark:text-slate-400 mb-1">
