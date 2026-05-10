@@ -26,7 +26,9 @@ ENV NODE_ENV=production \
     PORT=8080 \
     HOSTNAME=0.0.0.0
 
-COPY --from=builder /app/frontend/.next/standalone ./frontend
+# The standalone output is nested under a project folder in this monorepo build.
+# Copy the nested standalone root into /app so runtime path becomes /app/frontend/server.js.
+COPY --from=builder /app/frontend/.next/standalone/stock-project ./
 COPY --from=builder /app/frontend/.next/static ./frontend/.next/static
 COPY --from=builder /app/frontend/public ./frontend/public
 
