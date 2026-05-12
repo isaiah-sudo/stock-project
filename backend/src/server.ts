@@ -55,6 +55,8 @@ app.use(
         "http://trilliumfinance.net",
         "https://www.trilliumfinance.net",
         "http://www.trilliumfinance.net",
+        "https://api.trilliumfinance.net",
+        "http://api.trilliumfinance.net",
         "https://trillium-finance.nport.link"
       ];
 
