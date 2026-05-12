@@ -1,4 +1,4 @@
-const API_BASE = process.env.NEXT_PUBLIC_API_BASE_URL ?? "http://localhost:4000/api";
+const API_BASE = process.env.NEXT_PUBLIC_API_BASE_URL ?? "https://api.trilliumfinance.net";
 
 export function getToken() {
   if (typeof window === "undefined") return null;
