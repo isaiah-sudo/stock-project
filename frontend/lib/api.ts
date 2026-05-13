@@ -34,7 +34,7 @@ export async function apiFetch<T>(path: string, init?: RequestInit): Promise<T> 
       // Handle non-JSON responses (e.g., Cloudflare tunnel errors or 404s)
       const text = await response.text();
       if (!response.ok) {
-        throw new Error(`Server error: ${response.status}. The backend might be down or misconfigured.`);
+        throw new Error(`Server error: ${response.status}. The API might be down or misconfigured.`);
       }
       return text as unknown as T;
     }
@@ -46,7 +46,7 @@ export async function apiFetch<T>(path: string, init?: RequestInit): Promise<T> 
     return data as T;
   } catch (error: any) {
     if (error.name === "TypeError" || error.message.includes("Failed to fetch")) {
-      throw new Error("Backend unreachable. Please check if the server is running.");
+      throw new Error("API unreachable. Please check if the app is running.");
     }
     throw error;
   }

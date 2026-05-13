@@ -1,0 +1,86 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id                  String              @id @default(cuid())
+  email               String              @unique
+  passwordHash        String
+  experiencePoints    Int                 @default(0)
+  createdAt           DateTime            @default(now())
+
+  paperAccount        PaperAccount?
+  achievements        Achievement[]
+  portfolioSnapshots  PortfolioSnapshot[]
+}
+
+model Achievement {
+  id        String   @id @default(cuid())
+  userId    String
+  type      String
+  unlockedAt DateTime @default(now())
+
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, type])
+  @@map("achievements")
+}
+
+model PaperAccount {
+  userId      String @id
+  cashBalance Float  @default(10000)
+  linked      Boolean @default(false)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  user         User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  positions    PaperPosition[]
+  transactions PaperTransaction[]
+
+  @@map("paper_accounts")
+}
+
+model PaperPosition {
+  id          String  @id @default(cuid())
+  userId      String
+  symbol      String
+  name        String
+  quantity    Int
+  averageCost Float
+
+  account     PaperAccount @relation(fields: [userId], references: [userId], onDelete: Cascade)
+
+  @@unique([userId, symbol])
+  @@map("paper_positions")
+}
+
+model PaperTransaction {
+  id         String   @id @default(cuid())
+  userId     String
+  symbol     String
+  side       String
+  quantity   Int
+  price      Float
+  occurredAt DateTime @default(now())
+
+  account    PaperAccount @relation(fields: [userId], references: [userId], onDelete: Cascade)
+
+  @@map("paper_transactions")
+}
+
+model PortfolioSnapshot {
+  id               String   @id @default(cuid())
+  userId           String
+  totalMarketValue Float
+  timestamp        DateTime @default(now())
+
+  user             User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, timestamp(sort: Desc)])
+  @@map("portfolio_snapshots")
+}

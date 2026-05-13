@@ -39,7 +39,7 @@ export function ChatAssistant() {
         ...next,
         {
           role: "assistant",
-          text: "I could not generate a response. Check backend connectivity and Ollama status."
+          text: "I could not generate a response. Check the app connection and Ollama status."
         }
       ]);
     } finally {

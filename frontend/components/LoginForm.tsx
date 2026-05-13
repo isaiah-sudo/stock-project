@@ -45,7 +45,7 @@ export function LoginForm() {
       const mode = getMode() ?? "personal";
       router.push(getDefaultRouteForMode(mode));
     } catch {
-      setError("Demo login failed. Check that the backend server is running and accessible.");
+      setError("Demo login failed. Check that the app server is running and accessible.");
     } finally {
       setLoading(false);
     }

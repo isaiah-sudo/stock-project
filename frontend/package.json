@@ -3,28 +3,38 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "predev": "npm run build --workspace shared",
+    "predev": "npm run build --prefix ../shared",
     "dev": "next dev",
     "dev:lan": "next dev -H 0.0.0.0",
-    "prebuild": "npm run build --workspace shared",
+    "prebuild": "npm run build --prefix ../shared",
     "build": "next build",
-    "prestart": "npm run build --workspace shared",
-    "start": "next start"
+    "prestart": "npm run build --prefix ../shared",
+    "start": "next start",
+    "prisma:generate": "prisma generate --schema=prisma/schema.prisma"
   },
   "dependencies": {
+    "@neondatabase/serverless": "^0.10.4",
+    "@prisma/adapter-neon": "^6.19.3",
+    "@prisma/client": "^6.19.3",
     "@stock/shared": "0.1.0",
+    "bcryptjs": "^2.4.3",
     "firebase": "^12.11.0",
+    "jsonwebtoken": "^9.0.3",
     "next": "^15.0.0",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
-    "recharts": "^2.12.7"
+    "recharts": "^2.12.7",
+    "zod": "^3.25.76"
   },
   "devDependencies": {
+    "@types/bcryptjs": "^2.4.6",
+    "@types/jsonwebtoken": "^9.0.10",
     "@types/node": "^22.7.4",
     "@types/react": "^19.0.0",
     "@types/react-dom": "^19.0.0",
     "autoprefixer": "^10.4.20",
     "postcss": "^8.4.47",
+    "prisma": "^6.19.3",
     "tailwindcss": "^3.4.14",
     "typescript": "^5.6.3"
   }
