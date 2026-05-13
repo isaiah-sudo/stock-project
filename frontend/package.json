@@ -3,9 +3,12 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
+    "predev": "npm run build --workspace shared",
     "dev": "next dev",
     "dev:lan": "next dev -H 0.0.0.0",
+    "prebuild": "npm run build --workspace shared",
     "build": "next build",
+    "prestart": "npm run build --workspace shared",
     "start": "next start"
   },
   "dependencies": {
