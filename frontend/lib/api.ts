@@ -1,4 +1,11 @@
-const API_BASE = process.env.NEXT_PUBLIC_API_BASE_URL ?? "https://api.trilliumfinance.net";
+const API_PREFIX = "/api";
+
+function buildApiUrl(path: string) {
+  if (/^https?:\/\//i.test(path)) return path;
+  const normalizedPath = path.startsWith("/") ? path : `/${path}`;
+  if (normalizedPath.startsWith(API_PREFIX)) return normalizedPath;
+  return `${API_PREFIX}${normalizedPath}`;
+}
 
 export function getToken() {
   if (typeof window === "undefined") return null;
@@ -8,7 +15,7 @@ export function getToken() {
 export async function apiFetch<T>(path: string, init?: RequestInit): Promise<T> {
   const token = getToken();
   try {
-    const response = await fetch(`${API_BASE}${path}`, {
+    const response = await fetch(buildApiUrl(path), {
       ...init,
       headers: {
         "Content-Type": "application/json",

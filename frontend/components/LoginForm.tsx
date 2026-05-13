@@ -3,8 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { getDefaultRouteForMode, getMode } from "../lib/appMode";
-
-const API_BASE = process.env.NEXT_PUBLIC_API_BASE_URL ?? "http://localhost:4000/api";
+import { apiFetch } from "../lib/api";
 
 export function LoginForm() {
   const router = useRouter();
@@ -18,13 +17,10 @@ export function LoginForm() {
     setLoading(true);
     setError("");
     try {
-      const response = await fetch(`${API_BASE}/auth/login`, {
+      const data = await apiFetch<{ token: string }>("/auth/login", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email, password })
       });
-      if (!response.ok) throw new Error("Invalid credentials");
-      const data = (await response.json()) as { token: string };
       localStorage.setItem("token", data.token);
       const mode = getMode() ?? "personal";
       router.push(getDefaultRouteForMode(mode));
@@ -41,13 +37,10 @@ export function LoginForm() {
     setLoading(true);
     setError("");
     try {
-      const response = await fetch(`${API_BASE}/auth/login`, {
+      const data = await apiFetch<{ token: string }>("/auth/login", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email: "demo@example.com", password: "password123" })
       });
-      if (!response.ok) throw new Error("Invalid credentials");
-      const data = (await response.json()) as { token: string };
       localStorage.setItem("token", data.token);
       const mode = getMode() ?? "personal";
       router.push(getDefaultRouteForMode(mode));
